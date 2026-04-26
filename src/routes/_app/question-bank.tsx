@@ -409,9 +409,9 @@ function QuestionBankPage() {
                         {q.topic}
                       </Badge>
                     )}
-                    {subjectMap.get(q.subject_id) && (
+                    {q.subject_id && subjectMap.get(q.subject_id) && (
                       <span className="text-[10px] text-muted-foreground">
-                        · {subjectMap.get(q.subject_id)}
+                        · {subjectMap.get(q.subject_id!)}
                       </span>
                     )}
                     {q.image_url && (
