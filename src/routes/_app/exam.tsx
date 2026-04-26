@@ -637,6 +637,21 @@ function ResultsView({
                 {q.explanation}
               </div>
             )}
+            <div className="mt-3 ml-8">
+              <Link
+                to="/tutor"
+                search={{ questionId: q.id, subjectId: q.subject_id ?? "" }}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-emerald/40 text-emerald hover:bg-emerald/10"
+                >
+                  <Brain className="h-3.5 w-3.5 mr-1.5" />
+                  Explain with Sapientia
+                </Button>
+              </Link>
+            </div>
           </div>
         ))}
       </div>
