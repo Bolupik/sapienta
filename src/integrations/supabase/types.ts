@@ -169,6 +169,51 @@ export type Database = {
           },
         ]
       }
+      mock_sessions: {
+        Row: {
+          attempt_ids: string[]
+          completed_at: string | null
+          correct_count: number
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          mode: string
+          score_percent: number | null
+          started_at: string
+          subject_ids: string[]
+          total_questions: number
+          user_id: string
+        }
+        Insert: {
+          attempt_ids?: string[]
+          completed_at?: string | null
+          correct_count?: number
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          mode: string
+          score_percent?: number | null
+          started_at?: string
+          subject_ids: string[]
+          total_questions?: number
+          user_id: string
+        }
+        Update: {
+          attempt_ids?: string[]
+          completed_at?: string | null
+          correct_count?: number
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          mode?: string
+          score_percent?: number | null
+          started_at?: string
+          subject_ids?: string[]
+          total_questions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -263,6 +308,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      review_queue: {
+        Row: {
+          created_at: string
+          due_at: string
+          ease_factor: number
+          id: string
+          interval_days: number
+          last_correct: boolean | null
+          last_reviewed_at: string | null
+          question_id: string
+          repetitions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_at?: string
+          ease_factor?: number
+          id?: string
+          interval_days?: number
+          last_correct?: boolean | null
+          last_reviewed_at?: string | null
+          question_id: string
+          repetitions?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_at?: string
+          ease_factor?: number
+          id?: string
+          interval_days?: number
+          last_correct?: boolean | null
+          last_reviewed_at?: string | null
+          question_id?: string
+          repetitions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       subjects: {
         Row: {
