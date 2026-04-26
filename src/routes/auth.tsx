@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,13 +18,7 @@ import {
 import { GraduationCap, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-const SUBJECTS = [
-  { slug: "mathematics", name: "Mathematics" },
-  { slug: "english", name: "English Language" },
-  { slug: "physics", name: "Physics" },
-  { slug: "chemistry", name: "Chemistry" },
-  { slug: "biology", name: "Biology" },
-];
+type Subject = { slug: string; name: string; icon: string | null };
 
 const searchSchema = z.object({
   mode: z.enum(["signin", "signup"]).optional(),
@@ -78,6 +73,12 @@ function AuthPage() {
           </div>
 
           <div className="rounded-2xl border border-border bg-card shadow-elevated p-6 sm:p-8">
+            <GoogleButton />
+            <div className="my-5 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">or</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
             {mode === "signup" ? <SignUpForm /> : <SignInForm />}
           </div>
 
@@ -101,6 +102,65 @@ function AuthPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+function GoogleButton() {
+  const [loading, setLoading] = useState(false);
+  const handleGoogle = async () => {
+    setLoading(true);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin + "/dashboard",
+    });
+    if (result.error) {
+      toast.error("Could not start Google sign-in. Please try again.");
+      setLoading(false);
+      return;
+    }
+    if (result.redirected) return;
+    // session set by lovable client; AuthProvider will pick it up
+    window.location.assign("/dashboard");
+  };
+  return (
+    <Button
+      type="button"
+      onClick={handleGoogle}
+      disabled={loading}
+      variant="outline"
+      className="w-full h-11 gap-2"
+    >
+      {loading ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <>
+          <GoogleIcon />
+          <span>Continue with Google</span>
+        </>
+      )}
+    </Button>
+  );
+}
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path
+        fill="#4285F4"
+        d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.49h4.84c-.21 1.13-.84 2.08-1.79 2.72v2.26h2.9c1.7-1.56 2.69-3.87 2.69-6.63z"
+      />
+      <path
+        fill="#34A853"
+        d="M9 18c2.43 0 4.47-.81 5.96-2.18l-2.9-2.26c-.81.54-1.83.86-3.06.86-2.36 0-4.36-1.59-5.07-3.73H.96v2.34A9 9 0 0 0 9 18z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M3.93 10.69A5.4 5.4 0 0 1 3.64 9c0-.59.1-1.16.29-1.69V4.97H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.03l2.97-2.34z"
+      />
+      <path
+        fill="#EA4335"
+        d="M9 3.58c1.32 0 2.51.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.97L3.93 7.3C4.64 5.17 6.64 3.58 9 3.58z"
+      />
+    </svg>
   );
 }
 
@@ -191,8 +251,19 @@ function SignUpForm() {
   const [targetExam, setTargetExam] = useState<"waec" | "jamb" | "both">("both");
   const [examYear, setExamYear] = useState<string>(String(new Date().getFullYear() + 1));
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>(["mathematics", "english"]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("subjects")
+        .select("slug, name, icon")
+        .order("name");
+      setSubjects((data as Subject[]) ?? []);
+    })();
+  }, []);
 
   const toggleSubject = (slug: string) => {
     setSelectedSubjects((prev) =>
@@ -318,9 +389,9 @@ function SignUpForm() {
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Subjects</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {SUBJECTS.map((s) => {
+        <Label>Subjects ({selectedSubjects.length} picked)</Label>
+        <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
+          {subjects.map((s) => {
             const checked = selectedSubjects.includes(s.slug);
             return (
               <label
@@ -335,7 +406,10 @@ function SignUpForm() {
                   checked={checked}
                   onCheckedChange={() => toggleSubject(s.slug)}
                 />
-                <span className="text-sm font-medium">{s.name}</span>
+                <span className="text-sm font-medium leading-tight">
+                  {s.icon ? <span className="mr-1">{s.icon}</span> : null}
+                  {s.name}
+                </span>
               </label>
             );
           })}
