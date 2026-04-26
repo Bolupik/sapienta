@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTutorRouteImport } from './routes/_app/tutor'
 import { Route as AppSovereigntyRouteImport } from './routes/_app/sovereignty'
+import { Route as AppQuestionBankRouteImport } from './routes/_app/question-bank'
 import { Route as AppExamRouteImport } from './routes/_app/exam'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 
@@ -41,6 +42,11 @@ const AppSovereigntyRoute = AppSovereigntyRouteImport.update({
   path: '/sovereignty',
   getParentRoute: () => AppRoute,
 } as any)
+const AppQuestionBankRoute = AppQuestionBankRouteImport.update({
+  id: '/question-bank',
+  path: '/question-bank',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppExamRoute = AppExamRouteImport.update({
   id: '/exam',
   path: '/exam',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
+  '/question-bank': typeof AppQuestionBankRoute
   '/sovereignty': typeof AppSovereigntyRoute
   '/tutor': typeof AppTutorRoute
 }
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
+  '/question-bank': typeof AppQuestionBankRoute
   '/sovereignty': typeof AppSovereigntyRoute
   '/tutor': typeof AppTutorRoute
 }
@@ -75,14 +83,29 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/exam': typeof AppExamRoute
+  '/_app/question-bank': typeof AppQuestionBankRoute
   '/_app/sovereignty': typeof AppSovereigntyRoute
   '/_app/tutor': typeof AppTutorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/exam' | '/sovereignty' | '/tutor'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/exam'
+    | '/question-bank'
+    | '/sovereignty'
+    | '/tutor'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/exam' | '/sovereignty' | '/tutor'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/exam'
+    | '/question-bank'
+    | '/sovereignty'
+    | '/tutor'
   id:
     | '__root__'
     | '/'
@@ -90,6 +113,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_app/dashboard'
     | '/_app/exam'
+    | '/_app/question-bank'
     | '/_app/sovereignty'
     | '/_app/tutor'
   fileRoutesById: FileRoutesById
@@ -137,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSovereigntyRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/question-bank': {
+      id: '/_app/question-bank'
+      path: '/question-bank'
+      fullPath: '/question-bank'
+      preLoaderRoute: typeof AppQuestionBankRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/exam': {
       id: '/_app/exam'
       path: '/exam'
@@ -157,6 +188,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppExamRoute: typeof AppExamRoute
+  AppQuestionBankRoute: typeof AppQuestionBankRoute
   AppSovereigntyRoute: typeof AppSovereigntyRoute
   AppTutorRoute: typeof AppTutorRoute
 }
@@ -164,6 +196,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppExamRoute: AppExamRoute,
+  AppQuestionBankRoute: AppQuestionBankRoute,
   AppSovereigntyRoute: AppSovereigntyRoute,
   AppTutorRoute: AppTutorRoute,
 }
