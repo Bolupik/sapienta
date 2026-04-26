@@ -139,14 +139,14 @@ function QuestionBankPage() {
   useEffect(() => {
     if (searchInput === search.q) return;
     const t = setTimeout(() => {
-      navigate({ search: (prev) => ({ ...prev, q: searchInput }) });
+      navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, q: searchInput }) });
     }, 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
   const updateFilter = (key: string, value: string) => {
-    navigate({ search: (prev) => ({ ...prev, [key]: value }) });
+    navigate({ search: (prev: z.infer<typeof searchSchema>) => ({ ...prev, [key]: value }) });
   };
 
   const resetFilters = () => {
