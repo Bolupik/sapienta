@@ -20,6 +20,7 @@ import {
   Sparkles,
   Flame,
   Trophy,
+  Brain,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,6 +28,12 @@ import {
   pickDifficultyForSubject,
   type Badge as BadgeType,
 } from "@/lib/gamification";
+import {
+  normalizeQuestion,
+  shuffle,
+  type NormalizedQuestion,
+} from "@/lib/question-utils";
+import { recordReview } from "@/lib/srs";
 
 export const Route = createFileRoute("/_app/exam")({
   head: () => ({ meta: [{ title: "Mock Exams — Sapientia" }] }),
@@ -35,16 +42,7 @@ export const Route = createFileRoute("/_app/exam")({
 
 type Subject = { id: string; slug: string; name: string };
 type ExamType = "waec" | "jamb";
-type Question = {
-  id: string;
-  question_text: string;
-  options: { label: string; text: string }[];
-  correct_answer: string;
-  explanation: string | null;
-  topic: string | null;
-  image_url: string | null;
-  difficulty: "easy" | "medium" | "hard";
-};
+type Question = NormalizedQuestion;
 
 type Phase = "setup" | "active" | "results";
 
@@ -127,7 +125,10 @@ function ExamPage() {
       toast.error("No questions available for this combination yet.");
       return;
     }
-    const shuffled = [...qData].sort(() => Math.random() - 0.5).slice(0, limit) as Question[];
+    const normalised = (qData ?? []).map((r) =>
+      normalizeQuestion(r as Record<string, unknown>)
+    );
+    const shuffled = shuffle([...normalised]).slice(0, limit);
 
     const { data: attempt, error: aErr } = await supabase
       .from("exam_attempts")
@@ -188,6 +189,11 @@ function ExamPage() {
     if (answerRows.length) {
       await supabase.from("attempt_answers").insert(answerRows);
     }
+
+    // Spaced repetition scheduling
+    await Promise.all(
+      items.map((it) => recordReview(user.id, it.q.id, it.correct))
+    );
 
     // Award XP, update streak, evaluate badges
     const award = await awardExamXP(user.id, total, correct, score, subjectId);
