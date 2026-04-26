@@ -303,9 +303,9 @@ export function MockResultsView({
               <Trophy className="h-4 w-4 mr-2" /> Dashboard
             </Button>
           </Link>
-          <Link to="/analytics">
+          <Link to="/exam">
             <Button variant="outline" className="border-emerald-foreground/30 text-emerald-foreground hover:bg-emerald-foreground/10">
-              View analytics
+              More exams
             </Button>
           </Link>
         </div>

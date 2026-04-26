@@ -17,6 +17,8 @@ import { Route as AppSovereigntyRouteImport } from './routes/_app/sovereignty'
 import { Route as AppQuestionBankRouteImport } from './routes/_app/question-bank'
 import { Route as AppExamRouteImport } from './routes/_app/exam'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppMockWaecRouteImport } from './routes/_app/mock.waec'
+import { Route as AppMockJambRouteImport } from './routes/_app/mock.jamb'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -57,6 +59,16 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMockWaecRoute = AppMockWaecRouteImport.update({
+  id: '/mock/waec',
+  path: '/mock/waec',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppMockJambRoute = AppMockJambRouteImport.update({
+  id: '/mock/jamb',
+  path: '/mock/jamb',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +78,8 @@ export interface FileRoutesByFullPath {
   '/question-bank': typeof AppQuestionBankRoute
   '/sovereignty': typeof AppSovereigntyRoute
   '/tutor': typeof AppTutorRoute
+  '/mock/jamb': typeof AppMockJambRoute
+  '/mock/waec': typeof AppMockWaecRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +89,8 @@ export interface FileRoutesByTo {
   '/question-bank': typeof AppQuestionBankRoute
   '/sovereignty': typeof AppSovereigntyRoute
   '/tutor': typeof AppTutorRoute
+  '/mock/jamb': typeof AppMockJambRoute
+  '/mock/waec': typeof AppMockWaecRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +102,8 @@ export interface FileRoutesById {
   '/_app/question-bank': typeof AppQuestionBankRoute
   '/_app/sovereignty': typeof AppSovereigntyRoute
   '/_app/tutor': typeof AppTutorRoute
+  '/_app/mock/jamb': typeof AppMockJambRoute
+  '/_app/mock/waec': typeof AppMockWaecRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +115,8 @@ export interface FileRouteTypes {
     | '/question-bank'
     | '/sovereignty'
     | '/tutor'
+    | '/mock/jamb'
+    | '/mock/waec'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,6 +126,8 @@ export interface FileRouteTypes {
     | '/question-bank'
     | '/sovereignty'
     | '/tutor'
+    | '/mock/jamb'
+    | '/mock/waec'
   id:
     | '__root__'
     | '/'
@@ -116,6 +138,8 @@ export interface FileRouteTypes {
     | '/_app/question-bank'
     | '/_app/sovereignty'
     | '/_app/tutor'
+    | '/_app/mock/jamb'
+    | '/_app/mock/waec'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -182,6 +206,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/mock/waec': {
+      id: '/_app/mock/waec'
+      path: '/mock/waec'
+      fullPath: '/mock/waec'
+      preLoaderRoute: typeof AppMockWaecRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/mock/jamb': {
+      id: '/_app/mock/jamb'
+      path: '/mock/jamb'
+      fullPath: '/mock/jamb'
+      preLoaderRoute: typeof AppMockJambRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -191,6 +229,8 @@ interface AppRouteChildren {
   AppQuestionBankRoute: typeof AppQuestionBankRoute
   AppSovereigntyRoute: typeof AppSovereigntyRoute
   AppTutorRoute: typeof AppTutorRoute
+  AppMockJambRoute: typeof AppMockJambRoute
+  AppMockWaecRoute: typeof AppMockWaecRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -199,6 +239,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppQuestionBankRoute: AppQuestionBankRoute,
   AppSovereigntyRoute: AppSovereigntyRoute,
   AppTutorRoute: AppTutorRoute,
+  AppMockJambRoute: AppMockJambRoute,
+  AppMockWaecRoute: AppMockWaecRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
