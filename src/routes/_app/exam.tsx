@@ -10,8 +10,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Target, Clock, ArrowRight, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import {
+  Target,
+  Clock,
+  ArrowRight,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Sparkles,
+  Flame,
+  Trophy,
+} from "lucide-react";
 import { toast } from "sonner";
+import {
+  awardExamXP,
+  pickDifficultyForSubject,
+  type Badge as BadgeType,
+} from "@/lib/gamification";
 
 export const Route = createFileRoute("/_app/exam")({
   head: () => ({ meta: [{ title: "Mock Exams — Sapientia" }] }),
@@ -27,6 +42,8 @@ type Question = {
   correct_answer: string;
   explanation: string | null;
   topic: string | null;
+  image_url: string | null;
+  difficulty: "easy" | "medium" | "hard";
 };
 
 type Phase = "setup" | "active" | "results";
@@ -36,26 +53,28 @@ function ExamPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [phase, setPhase] = useState<Phase>("setup");
 
-  // Setup state
   const [subjectId, setSubjectId] = useState("");
   const [examType, setExamType] = useState<ExamType>("jamb");
   const [questionCount, setQuestionCount] = useState("5");
   const [starting, setStarting] = useState(false);
+  const [adaptiveLabel, setAdaptiveLabel] = useState<string | null>(null);
 
-  // Active exam state
   const [questions, setQuestions] = useState<Question[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const [currentIdx, setCurrentIdx] = useState(0);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [startedAt, setStartedAt] = useState<number>(0);
   const [elapsed, setElapsed] = useState(0);
 
-  // Results
   const [results, setResults] = useState<{
     score: number;
     correct: number;
     total: number;
     items: { q: Question; userAnswer: string | null; correct: boolean }[];
+    xpEarned: number;
+    streak: number;
+    newBadges: BadgeType[];
   } | null>(null);
 
   useEffect(() => {
@@ -65,7 +84,6 @@ function ExamPage() {
     })();
   }, []);
 
-  // Timer
   useEffect(() => {
     if (phase !== "active") return;
     const id = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
@@ -80,13 +98,31 @@ function ExamPage() {
     if (!user) return;
     setStarting(true);
     const limit = parseInt(questionCount, 10);
-    // Pull questions by subject + exam_type (random)
-    const { data: qData, error: qErr } = await supabase
+
+    // Adaptive: pick a difficulty bucket from past performance
+    const bucket = await pickDifficultyForSubject(user.id, subjectId);
+    setAdaptiveLabel(bucket);
+
+    let query = supabase
       .from("questions")
-      .select("id, question_text, options, correct_answer, explanation, topic")
+      .select("id, question_text, options, correct_answer, explanation, topic, image_url, difficulty")
       .eq("subject_id", subjectId)
       .in("exam_type", [examType, "both"]);
-    if (qErr || !qData || qData.length === 0) {
+    if (bucket !== "mixed") {
+      query = query.eq("difficulty", bucket);
+    }
+    let { data: qData } = await query;
+
+    // Fallback: if difficulty filter returns too few, broaden
+    if (!qData || qData.length < limit) {
+      const { data: fallback } = await supabase
+        .from("questions")
+        .select("id, question_text, options, correct_answer, explanation, topic, image_url, difficulty")
+        .eq("subject_id", subjectId)
+        .in("exam_type", [examType, "both"]);
+      qData = fallback;
+    }
+    if (!qData || qData.length === 0) {
       setStarting(false);
       toast.error("No questions available for this combination yet.");
       return;
@@ -111,6 +147,7 @@ function ExamPage() {
 
     setQuestions(shuffled);
     setAnswers({});
+    setRevealed({});
     setCurrentIdx(0);
     setAttemptId(attempt.id);
     setStartedAt(Date.now());
@@ -132,7 +169,6 @@ function ExamPage() {
     const score = total > 0 ? (correct / total) * 100 : 0;
     const duration = Math.floor((Date.now() - startedAt) / 1000);
 
-    // Save attempt + answers
     await supabase
       .from("exam_attempts")
       .update({
@@ -153,7 +189,24 @@ function ExamPage() {
       await supabase.from("attempt_answers").insert(answerRows);
     }
 
-    setResults({ score, correct, total, items });
+    // Award XP, update streak, evaluate badges
+    const award = await awardExamXP(user.id, total, correct, score, subjectId);
+    if (award.streakIncreased) {
+      toast.success(`🔥 ${award.newStats.current_streak}-day streak!`);
+    }
+    award.newBadges.forEach((b) => {
+      toast.success(`${b.icon} Badge unlocked: ${b.name}`);
+    });
+
+    setResults({
+      score,
+      correct,
+      total,
+      items,
+      xpEarned: award.xpEarned,
+      streak: award.newStats.current_streak,
+      newBadges: award.newBadges,
+    });
     setPhase("results");
   };
 
@@ -166,7 +219,9 @@ function ExamPage() {
           </div>
           <div>
             <h1 className="font-display text-2xl sm:text-3xl font-semibold">Mock Exam</h1>
-            <p className="text-sm text-muted-foreground">Set up your practice session.</p>
+            <p className="text-sm text-muted-foreground">
+              Adaptive difficulty tunes itself to your past performance.
+            </p>
           </div>
         </div>
 
@@ -226,7 +281,7 @@ function ExamPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Tip: take a short, focused exam every day to build the streak.
+          Tip: a focused exam every day keeps your streak alive 🔥
         </p>
       </main>
     );
@@ -240,8 +295,11 @@ function ExamPage() {
         setCurrentIdx={setCurrentIdx}
         answers={answers}
         setAnswers={setAnswers}
+        revealed={revealed}
+        setRevealed={setRevealed}
         elapsed={elapsed}
         submit={submit}
+        adaptiveLabel={adaptiveLabel}
       />
     );
   }
@@ -259,34 +317,55 @@ function ActiveExam({
   setCurrentIdx,
   answers,
   setAnswers,
+  revealed,
+  setRevealed,
   elapsed,
   submit,
+  adaptiveLabel,
 }: {
   questions: Question[];
   currentIdx: number;
   setCurrentIdx: (i: number) => void;
   answers: Record<string, string>;
   setAnswers: (a: Record<string, string>) => void;
+  revealed: Record<string, boolean>;
+  setRevealed: (r: Record<string, boolean>) => void;
   elapsed: number;
   submit: () => void;
+  adaptiveLabel: string | null;
 }) {
   const q = questions[currentIdx];
   const answered = Object.keys(answers).length;
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
+  const isRevealed = !!revealed[q.id];
+  const userAnswer = answers[q.id];
 
   const choose = (label: string) => {
+    if (isRevealed) return; // lock in once shown
     setAnswers({ ...answers, [q.id]: label });
+  };
+
+  const showExplanation = () => {
+    if (!userAnswer) {
+      toast.error("Pick an answer first");
+      return;
+    }
+    setRevealed({ ...revealed, [q.id]: true });
   };
 
   return (
     <main className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-10">
-      {/* Header bar */}
       <div className="flex items-center justify-between mb-5">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-sm text-muted-foreground flex items-center gap-2">
           Question{" "}
           <span className="font-display font-semibold text-foreground">{currentIdx + 1}</span> of{" "}
           {questions.length}
+          {adaptiveLabel && adaptiveLabel !== "mixed" && (
+            <span className="ml-2 text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/20 text-accent-foreground">
+              adaptive · {adaptiveLabel}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2 text-sm font-mono tabular-nums bg-card border border-border px-3 py-1.5 rounded-lg">
           <Clock className="h-3.5 w-3.5 text-emerald" />
@@ -294,7 +373,6 @@ function ActiveExam({
         </div>
       </div>
 
-      {/* Progress */}
       <div className="h-1.5 rounded-full bg-muted mb-6 overflow-hidden">
         <div
           className="h-full bg-gradient-hero transition-all"
@@ -302,46 +380,98 @@ function ActiveExam({
         />
       </div>
 
-      {/* Question */}
       <div className="rounded-2xl border border-border bg-card shadow-paper p-6 sm:p-8">
         {q.topic && (
           <div className="text-[10px] uppercase tracking-[0.2em] text-emerald font-semibold mb-3">
-            {q.topic}
+            {q.topic} · {q.difficulty}
           </div>
         )}
-        <p className="font-display text-xl sm:text-2xl font-medium leading-snug mb-6">
+        <p className="font-display text-xl sm:text-2xl font-medium leading-snug mb-4">
           {q.question_text}
         </p>
+        {q.image_url && (
+          <div className="mb-6 rounded-xl overflow-hidden border border-border bg-white">
+            <img
+              src={q.image_url}
+              alt="Question diagram"
+              loading="lazy"
+              className="w-full h-auto max-h-80 object-contain"
+            />
+          </div>
+        )}
         <div className="space-y-2.5">
           {q.options.map((opt) => {
-            const selected = answers[q.id] === opt.label;
+            const selected = userAnswer === opt.label;
+            const isCorrect = opt.label === q.correct_answer;
+            const showState = isRevealed;
+            const stateClass = showState
+              ? isCorrect
+                ? "border-emerald bg-emerald/10"
+                : selected
+                  ? "border-destructive bg-destructive/10"
+                  : "border-border opacity-60"
+              : selected
+                ? "border-emerald bg-emerald/5 shadow-paper"
+                : "border-border hover:border-emerald/40 hover:bg-muted/40";
             return (
               <button
                 key={opt.label}
                 onClick={() => choose(opt.label)}
-                className={`w-full text-left flex items-center gap-3 rounded-xl border p-4 transition ${
-                  selected
-                    ? "border-emerald bg-emerald/5 shadow-paper"
-                    : "border-border hover:border-emerald/40 hover:bg-muted/40"
-                }`}
+                disabled={isRevealed}
+                className={`w-full text-left flex items-center gap-3 rounded-xl border p-4 transition ${stateClass}`}
               >
                 <div
                   className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display font-semibold text-sm ${
-                    selected
+                    selected || (showState && isCorrect)
                       ? "bg-emerald text-emerald-foreground"
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {opt.label}
                 </div>
-                <span className="text-sm sm:text-base">{opt.text}</span>
+                <span className="text-sm sm:text-base flex-1">{opt.text}</span>
+                {showState && isCorrect && (
+                  <CheckCircle2 className="h-4 w-4 text-emerald shrink-0" />
+                )}
+                {showState && selected && !isCorrect && (
+                  <XCircle className="h-4 w-4 text-destructive shrink-0" />
+                )}
               </button>
             );
           })}
         </div>
+
+        {/* Post-answer explanation */}
+        {isRevealed && q.explanation && (
+          <div
+            className={`mt-5 rounded-xl border p-4 ${
+              userAnswer === q.correct_answer
+                ? "border-emerald/30 bg-emerald/5"
+                : "border-accent/30 bg-accent/5"
+            }`}
+          >
+            <div className="flex items-center gap-2 font-display font-semibold text-sm mb-2">
+              <Sparkles className="h-4 w-4 text-emerald" />
+              {userAnswer === q.correct_answer
+                ? "Correct — here's why"
+                : `Not quite — the answer is ${q.correct_answer}`}
+            </div>
+            <p className="text-sm leading-relaxed text-foreground/90">{q.explanation}</p>
+          </div>
+        )}
+
+        {!isRevealed && userAnswer && (
+          <Button
+            onClick={showExplanation}
+            variant="outline"
+            className="mt-5 w-full border-emerald/40 text-emerald hover:bg-emerald/10"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            Check answer & see explanation
+          </Button>
+        )}
       </div>
 
-      {/* Footer nav */}
       <div className="mt-6 flex items-center justify-between gap-3">
         <Button
           variant="outline"
@@ -377,12 +507,15 @@ function ResultsView({
   results,
   reset,
 }: {
-  results: NonNullable<ReturnType<typeof useState<{
+  results: {
     score: number;
     correct: number;
     total: number;
     items: { q: Question; userAnswer: string | null; correct: boolean }[];
-  }>>[0]>;
+    xpEarned: number;
+    streak: number;
+    newBadges: BadgeType[];
+  };
   reset: () => void;
 }) {
   const score = Math.round(results.score);
@@ -404,6 +537,14 @@ function ResultsView({
         <div className="mt-3 text-sm text-emerald-foreground/80">
           {results.correct} correct out of {results.total}
         </div>
+        <div className="mt-5 flex items-center justify-center gap-4 text-sm">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-foreground/10">
+            <Sparkles className="h-3.5 w-3.5 text-accent" /> +{results.xpEarned} XP
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-foreground/10">
+            <Flame className="h-3.5 w-3.5 text-accent" /> {results.streak}-day streak
+          </div>
+        </div>
         <div className="mt-6 flex justify-center gap-3">
           <Button variant="secondary" onClick={reset}>
             Try another
@@ -415,6 +556,26 @@ function ResultsView({
           </Link>
         </div>
       </div>
+
+      {results.newBadges.length > 0 && (
+        <div className="rounded-2xl border-2 border-accent/40 bg-accent/5 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="h-5 w-5 text-accent" />
+            <h3 className="font-display text-lg font-semibold">New badges unlocked!</h3>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {results.newBadges.map((b) => (
+              <div
+                key={b.id}
+                className="flex items-center gap-2 rounded-full bg-card border border-border px-3 py-1.5 text-sm shadow-paper"
+              >
+                <span className="text-lg">{b.icon}</span>
+                <span className="font-medium">{b.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <h2 className="font-display text-2xl font-semibold mb-4">Review</h2>
       <div className="space-y-4">
@@ -431,6 +592,16 @@ function ResultsView({
                 <p className="font-medium leading-snug">{q.question_text}</p>
               </div>
             </div>
+            {q.image_url && (
+              <div className="ml-8 mb-3 rounded-lg overflow-hidden border border-border bg-white max-w-sm">
+                <img
+                  src={q.image_url}
+                  alt="Question diagram"
+                  loading="lazy"
+                  className="w-full h-auto"
+                />
+              </div>
+            )}
             <div className="ml-8 space-y-1.5 text-sm">
               {q.options.map((o) => {
                 const isCorrect = o.label === q.correct_answer;

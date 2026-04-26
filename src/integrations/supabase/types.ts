@@ -59,6 +59,69 @@ export type Database = {
           },
         ]
       }
+      badges: {
+        Row: {
+          created_at: string
+          criteria: Json
+          description: string
+          icon: string
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          criteria: Json
+          description: string
+          icon: string
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      daily_activity: {
+        Row: {
+          activity_date: string
+          correct_answers: number
+          created_at: string
+          goal_met: boolean
+          id: string
+          questions_answered: number
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          activity_date: string
+          correct_answers?: number
+          created_at?: string
+          goal_met?: boolean
+          id?: string
+          questions_answered?: number
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          activity_date?: string
+          correct_answers?: number
+          created_at?: string
+          goal_met?: boolean
+          id?: string
+          questions_answered?: number
+          user_id?: string
+          xp_earned?: number
+        }
+        Relationships: []
+      }
       exam_attempts: {
         Row: {
           completed_at: string | null
@@ -154,6 +217,7 @@ export type Database = {
           explanation: string | null
           format: Database["public"]["Enums"]["question_format"]
           id: string
+          image_url: string | null
           options: Json | null
           question_text: string
           subject_id: string
@@ -168,6 +232,7 @@ export type Database = {
           explanation?: string | null
           format?: Database["public"]["Enums"]["question_format"]
           id?: string
+          image_url?: string | null
           options?: Json | null
           question_text: string
           subject_id: string
@@ -182,6 +247,7 @@ export type Database = {
           explanation?: string | null
           format?: Database["public"]["Enums"]["question_format"]
           id?: string
+          image_url?: string | null
           options?: Json | null
           question_text?: string
           subject_id?: string
@@ -292,6 +358,35 @@ export type Database = {
           },
         ]
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_id_fkey"
+            columns: ["badge_id"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -310,6 +405,42 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          created_at: string
+          current_streak: number
+          daily_goal: number
+          last_activity_date: string | null
+          level: number
+          longest_streak: number
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          daily_goal?: number
+          last_activity_date?: string | null
+          level?: number
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          daily_goal?: number
+          last_activity_date?: string | null
+          level?: number
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+          xp?: number
         }
         Relationships: []
       }

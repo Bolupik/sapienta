@@ -39,21 +39,55 @@ type Attempt = {
   subjects?: { name: string; slug: string };
 };
 
+type StatsRow = {
+  xp: number;
+  level: number;
+  current_streak: number;
+  longest_streak: number;
+  daily_goal: number;
+};
+
+type EarnedBadge = {
+  earned_at: string;
+  badges: { slug: string; name: string; icon: string; description: string } | null;
+};
+
 function Dashboard() {
   const { user, profile } = useAuth();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [stats, setStats] = useState<StatsRow | null>(null);
+  const [badges, setBadges] = useState<EarnedBadge[]>([]);
+  const [todayAnswered, setTodayAnswered] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("exam_attempts")
-        .select("*, subjects(name, slug)")
-        .eq("user_id", user.id)
-        .order("started_at", { ascending: false })
-        .limit(20);
-      setAttempts((data as Attempt[]) ?? []);
+      const today = new Date().toISOString().slice(0, 10);
+      const [a, s, b, d] = await Promise.all([
+        supabase
+          .from("exam_attempts")
+          .select("*, subjects(name, slug)")
+          .eq("user_id", user.id)
+          .order("started_at", { ascending: false })
+          .limit(20),
+        supabase.from("user_stats").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase
+          .from("user_badges")
+          .select("earned_at, badges(slug, name, icon, description)")
+          .eq("user_id", user.id)
+          .order("earned_at", { ascending: false }),
+        supabase
+          .from("daily_activity")
+          .select("questions_answered")
+          .eq("user_id", user.id)
+          .eq("activity_date", today)
+          .maybeSingle(),
+      ]);
+      setAttempts((a.data as Attempt[]) ?? []);
+      setStats((s.data as StatsRow) ?? null);
+      setBadges((b.data as EarnedBadge[]) ?? []);
+      setTodayAnswered(d.data?.questions_answered ?? 0);
       setLoading(false);
     })();
   }, [user]);
@@ -83,8 +117,12 @@ function Dashboard() {
       score: Number(a.score_percent),
     }));
 
-  // Streak: count consecutive days with at least one attempt up to today
-  const streak = computeStreak(completedAttempts.map((a) => a.completed_at!));
+  // Streak: prefer DB-backed streak, fall back to derived from attempts
+  const streak = stats?.current_streak ?? computeStreak(completedAttempts.map((a) => a.completed_at!));
+  const xp = stats?.xp ?? 0;
+  const level = stats?.level ?? 1;
+  const dailyGoal = stats?.daily_goal ?? 10;
+  const goalProgress = Math.min(100, Math.round((todayAnswered / dailyGoal) * 100));
 
   const firstName = (profile?.display_name || profile?.full_name || "Student").split(" ")[0];
 
@@ -122,14 +160,51 @@ function Dashboard() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard icon={Target} label="Exams taken" value={String(completedAttempts.length)} />
-        <StatCard icon={TrendingUp} label="Average score" value={`${avgScore}%`} accent />
+        <StatCard icon={Sparkles} label={`Level ${level} · XP`} value={String(xp)} accent />
         <StatCard icon={Flame} label="Day streak" value={String(streak)} />
-        <StatCard
-          icon={BookOpen}
-          label="Active subjects"
-          value={String(profile?.selected_subjects?.length ?? 0)}
-        />
+        <StatCard icon={TrendingUp} label="Average score" value={`${avgScore}%`} />
+        <StatCard icon={Target} label="Exams taken" value={String(completedAttempts.length)} />
+      </div>
+
+      {/* Daily goal + badges */}
+      <div className="grid md:grid-cols-3 gap-4 mb-8">
+        <div className="md:col-span-2 rounded-2xl border border-border bg-card shadow-paper p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-display font-semibold">Today's goal</h3>
+            <span className="text-sm tabular-nums text-muted-foreground">
+              {todayAnswered}/{dailyGoal} questions
+            </span>
+          </div>
+          <div className="h-2.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full bg-gradient-hero rounded-full transition-all"
+              style={{ width: `${goalProgress}%` }}
+            />
+          </div>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {goalProgress >= 100
+              ? "🎉 Goal smashed for today — your streak is safe!"
+              : `${dailyGoal - todayAnswered} to go to keep your streak alive.`}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card shadow-paper p-5">
+          <h3 className="font-display font-semibold mb-3">Badges</h3>
+          {badges.length === 0 ? (
+            <p className="text-xs text-muted-foreground">Earn badges by hitting streaks and XP milestones.</p>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {badges.slice(0, 8).map((b, i) => (
+                <span
+                  key={i}
+                  title={`${b.badges?.name} — ${b.badges?.description}`}
+                  className="text-2xl"
+                >
+                  {b.badges?.icon}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Trend + subjects */}
