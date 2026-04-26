@@ -20,6 +20,7 @@ import {
   Sparkles,
   Flame,
   Trophy,
+  Brain,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,6 +28,12 @@ import {
   pickDifficultyForSubject,
   type Badge as BadgeType,
 } from "@/lib/gamification";
+import {
+  normalizeQuestion,
+  shuffle,
+  type NormalizedQuestion,
+} from "@/lib/question-utils";
+import { recordReview } from "@/lib/srs";
 
 export const Route = createFileRoute("/_app/exam")({
   head: () => ({ meta: [{ title: "Mock Exams — Sapientia" }] }),
@@ -35,16 +42,7 @@ export const Route = createFileRoute("/_app/exam")({
 
 type Subject = { id: string; slug: string; name: string };
 type ExamType = "waec" | "jamb";
-type Question = {
-  id: string;
-  question_text: string;
-  options: { label: string; text: string }[];
-  correct_answer: string;
-  explanation: string | null;
-  topic: string | null;
-  image_url: string | null;
-  difficulty: "easy" | "medium" | "hard";
-};
+type Question = NormalizedQuestion;
 
 type Phase = "setup" | "active" | "results";
 
@@ -127,7 +125,10 @@ function ExamPage() {
       toast.error("No questions available for this combination yet.");
       return;
     }
-    const shuffled = [...qData].sort(() => Math.random() - 0.5).slice(0, limit) as Question[];
+    const normalised = (qData ?? []).map((r) =>
+      normalizeQuestion(r as Record<string, unknown>)
+    );
+    const shuffled = shuffle([...normalised]).slice(0, limit);
 
     const { data: attempt, error: aErr } = await supabase
       .from("exam_attempts")
@@ -189,6 +190,11 @@ function ExamPage() {
       await supabase.from("attempt_answers").insert(answerRows);
     }
 
+    // Spaced repetition scheduling
+    await Promise.all(
+      items.map((it) => recordReview(user.id, it.q.id, it.correct))
+    );
+
     // Award XP, update streak, evaluate badges
     const award = await awardExamXP(user.id, total, correct, score, subjectId);
     if (award.streakIncreased) {
@@ -223,6 +229,43 @@ function ExamPage() {
               Adaptive difficulty tunes itself to your past performance.
             </p>
           </div>
+        </div>
+
+        <div className="grid sm:grid-cols-2 gap-4 mb-8">
+          <Link
+            to="/mock/waec"
+            className="rounded-2xl border border-border bg-card shadow-paper p-5 hover:border-emerald/40 hover:shadow-elevated transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-emerald font-semibold">
+                Full mock
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald transition" />
+            </div>
+            <div className="font-display text-lg font-semibold">WAEC Mock</div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Single subject · 50 questions · 60-minute timer.
+            </p>
+          </Link>
+          <Link
+            to="/mock/jamb"
+            className="rounded-2xl border border-border bg-card shadow-paper p-5 hover:border-emerald/40 hover:shadow-elevated transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-emerald font-semibold">
+                Full mock
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald transition" />
+            </div>
+            <div className="font-display text-lg font-semibold">JAMB Mock</div>
+            <p className="text-sm text-muted-foreground mt-1">
+              English + 3 subjects · 160 questions · 2-hour timer.
+            </p>
+          </Link>
+        </div>
+
+        <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold mb-3">
+          Or quick practice
         </div>
 
         <div className="rounded-2xl border border-border bg-card shadow-paper p-6 sm:p-8 space-y-6">
@@ -631,6 +674,21 @@ function ResultsView({
                 {q.explanation}
               </div>
             )}
+            <div className="mt-3 ml-8">
+              <Link
+                to="/tutor"
+                search={{ questionId: q.id, subjectId: q.subject_id ?? "" }}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-emerald/40 text-emerald hover:bg-emerald/10"
+                >
+                  <Brain className="h-3.5 w-3.5 mr-1.5" />
+                  Explain with Sapientia
+                </Button>
+              </Link>
+            </div>
           </div>
         ))}
       </div>

@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Image as ImageIcon,
 } from "lucide-react";
+import { normalizeQuestion, type NormalizedQuestion } from "@/lib/question-utils";
 
 const searchSchema = z.object({
   subject: fallback(z.string(), "all").default("all"),
@@ -40,19 +41,7 @@ export const Route = createFileRoute("/_app/question-bank")({
 });
 
 type Subject = { id: string; slug: string; name: string };
-type Question = {
-  id: string;
-  question_text: string;
-  options: { label: string; text: string }[] | null;
-  correct_answer: string;
-  explanation: string | null;
-  topic: string | null;
-  year: number | null;
-  image_url: string | null;
-  difficulty: "easy" | "medium" | "hard";
-  exam_type: "waec" | "jamb";
-  subject_id: string;
-};
+type Question = NormalizedQuestion & { exam_type: "waec" | "jamb" | "both" };
 
 const PAGE_SIZE = 20;
 
@@ -129,7 +118,9 @@ function QuestionBankPage() {
         console.error(error);
         setQuestions([]);
       } else {
-        setQuestions((data ?? []) as Question[]);
+        setQuestions(
+          (data ?? []).map((r) => normalizeQuestion(r as Record<string, unknown>) as Question)
+        );
       }
       setLoading(false);
     });
@@ -418,9 +409,9 @@ function QuestionBankPage() {
                         {q.topic}
                       </Badge>
                     )}
-                    {subjectMap.get(q.subject_id) && (
+                    {q.subject_id && subjectMap.get(q.subject_id) && (
                       <span className="text-[10px] text-muted-foreground">
-                        · {subjectMap.get(q.subject_id)}
+                        · {subjectMap.get(q.subject_id!)}
                       </span>
                     )}
                     {q.image_url && (
