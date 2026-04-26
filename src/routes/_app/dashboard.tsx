@@ -39,21 +39,55 @@ type Attempt = {
   subjects?: { name: string; slug: string };
 };
 
+type StatsRow = {
+  xp: number;
+  level: number;
+  current_streak: number;
+  longest_streak: number;
+  daily_goal: number;
+};
+
+type EarnedBadge = {
+  earned_at: string;
+  badges: { slug: string; name: string; icon: string; description: string } | null;
+};
+
 function Dashboard() {
   const { user, profile } = useAuth();
   const [attempts, setAttempts] = useState<Attempt[]>([]);
+  const [stats, setStats] = useState<StatsRow | null>(null);
+  const [badges, setBadges] = useState<EarnedBadge[]>([]);
+  const [todayAnswered, setTodayAnswered] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const { data } = await supabase
-        .from("exam_attempts")
-        .select("*, subjects(name, slug)")
-        .eq("user_id", user.id)
-        .order("started_at", { ascending: false })
-        .limit(20);
-      setAttempts((data as Attempt[]) ?? []);
+      const today = new Date().toISOString().slice(0, 10);
+      const [a, s, b, d] = await Promise.all([
+        supabase
+          .from("exam_attempts")
+          .select("*, subjects(name, slug)")
+          .eq("user_id", user.id)
+          .order("started_at", { ascending: false })
+          .limit(20),
+        supabase.from("user_stats").select("*").eq("user_id", user.id).maybeSingle(),
+        supabase
+          .from("user_badges")
+          .select("earned_at, badges(slug, name, icon, description)")
+          .eq("user_id", user.id)
+          .order("earned_at", { ascending: false }),
+        supabase
+          .from("daily_activity")
+          .select("questions_answered")
+          .eq("user_id", user.id)
+          .eq("activity_date", today)
+          .maybeSingle(),
+      ]);
+      setAttempts((a.data as Attempt[]) ?? []);
+      setStats((s.data as StatsRow) ?? null);
+      setBadges((b.data as EarnedBadge[]) ?? []);
+      setTodayAnswered(d.data?.questions_answered ?? 0);
       setLoading(false);
     })();
   }, [user]);
