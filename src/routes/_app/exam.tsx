@@ -231,6 +231,43 @@ function ExamPage() {
           </div>
         </div>
 
+        <div className="grid sm:grid-cols-2 gap-4 mb-8">
+          <Link
+            to="/mock/waec"
+            className="rounded-2xl border border-border bg-card shadow-paper p-5 hover:border-emerald/40 hover:shadow-elevated transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-emerald font-semibold">
+                Full mock
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald transition" />
+            </div>
+            <div className="font-display text-lg font-semibold">WAEC Mock</div>
+            <p className="text-sm text-muted-foreground mt-1">
+              Single subject · 50 questions · 60-minute timer.
+            </p>
+          </Link>
+          <Link
+            to="/mock/jamb"
+            className="rounded-2xl border border-border bg-card shadow-paper p-5 hover:border-emerald/40 hover:shadow-elevated transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-[10px] uppercase tracking-[0.2em] text-emerald font-semibold">
+                Full mock
+              </div>
+              <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald transition" />
+            </div>
+            <div className="font-display text-lg font-semibold">JAMB Mock</div>
+            <p className="text-sm text-muted-foreground mt-1">
+              English + 3 subjects · 160 questions · 2-hour timer.
+            </p>
+          </Link>
+        </div>
+
+        <div className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold mb-3">
+          Or quick practice
+        </div>
+
         <div className="rounded-2xl border border-border bg-card shadow-paper p-6 sm:p-8 space-y-6">
           <div className="space-y-2">
             <label className="text-sm font-medium">Subject</label>
