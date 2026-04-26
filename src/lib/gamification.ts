@@ -185,7 +185,7 @@ async function evaluateBadges(
     if (avg >= 80) subjectMastery = true;
   }
 
-  for (const badge of (badges ?? []) as Badge[]) {
+  for (const badge of (badges ?? []) as unknown as Badge[]) {
     if (ownedIds.has(badge.id)) continue;
     let earned = false;
     const { type, value } = badge.criteria;
