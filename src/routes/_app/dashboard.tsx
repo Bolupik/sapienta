@@ -11,6 +11,7 @@ import {
   ArrowRight,
   BookOpen,
   Sparkles,
+  RotateCw,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -145,6 +146,16 @@ function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link to="/review">
+            <Button variant="outline" className="gap-2">
+              <RotateCw className="h-4 w-4" /> Review due
+            </Button>
+          </Link>
+          <Link to="/analytics">
+            <Button variant="outline" className="gap-2">
+              <TrendingUp className="h-4 w-4" /> Analytics
+            </Button>
+          </Link>
           <Link to="/tutor">
             <Button variant="outline" className="gap-2">
               <Brain className="h-4 w-4" /> Ask AI Tutor
