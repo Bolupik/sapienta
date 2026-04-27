@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTutorRouteImport } from './routes/_app/tutor'
 import { Route as AppSovereigntyRouteImport } from './routes/_app/sovereignty'
+import { Route as AppReviewRouteImport } from './routes/_app/review'
 import { Route as AppQuestionBankRouteImport } from './routes/_app/question-bank'
 import { Route as AppExamRouteImport } from './routes/_app/exam'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
@@ -42,6 +43,11 @@ const AppTutorRoute = AppTutorRouteImport.update({
 const AppSovereigntyRoute = AppSovereigntyRouteImport.update({
   id: '/sovereignty',
   path: '/sovereignty',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReviewRoute = AppReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
   getParentRoute: () => AppRoute,
 } as any)
 const AppQuestionBankRoute = AppQuestionBankRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
   '/question-bank': typeof AppQuestionBankRoute
+  '/review': typeof AppReviewRoute
   '/sovereignty': typeof AppSovereigntyRoute
   '/tutor': typeof AppTutorRoute
   '/mock/jamb': typeof AppMockJambRoute
@@ -87,6 +94,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
   '/question-bank': typeof AppQuestionBankRoute
+  '/review': typeof AppReviewRoute
   '/sovereignty': typeof AppSovereigntyRoute
   '/tutor': typeof AppTutorRoute
   '/mock/jamb': typeof AppMockJambRoute
@@ -100,6 +108,7 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/exam': typeof AppExamRoute
   '/_app/question-bank': typeof AppQuestionBankRoute
+  '/_app/review': typeof AppReviewRoute
   '/_app/sovereignty': typeof AppSovereigntyRoute
   '/_app/tutor': typeof AppTutorRoute
   '/_app/mock/jamb': typeof AppMockJambRoute
@@ -113,6 +122,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/exam'
     | '/question-bank'
+    | '/review'
     | '/sovereignty'
     | '/tutor'
     | '/mock/jamb'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/exam'
     | '/question-bank'
+    | '/review'
     | '/sovereignty'
     | '/tutor'
     | '/mock/jamb'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/exam'
     | '/_app/question-bank'
+    | '/_app/review'
     | '/_app/sovereignty'
     | '/_app/tutor'
     | '/_app/mock/jamb'
@@ -185,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSovereigntyRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/review': {
+      id: '/_app/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof AppReviewRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/question-bank': {
       id: '/_app/question-bank'
       path: '/question-bank'
@@ -227,6 +246,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppExamRoute: typeof AppExamRoute
   AppQuestionBankRoute: typeof AppQuestionBankRoute
+  AppReviewRoute: typeof AppReviewRoute
   AppSovereigntyRoute: typeof AppSovereigntyRoute
   AppTutorRoute: typeof AppTutorRoute
   AppMockJambRoute: typeof AppMockJambRoute
@@ -237,6 +257,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppExamRoute: AppExamRoute,
   AppQuestionBankRoute: AppQuestionBankRoute,
+  AppReviewRoute: AppReviewRoute,
   AppSovereigntyRoute: AppSovereigntyRoute,
   AppTutorRoute: AppTutorRoute,
   AppMockJambRoute: AppMockJambRoute,
