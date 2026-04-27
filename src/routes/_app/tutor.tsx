@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,9 +16,16 @@ import {
 } from "@/components/ui/select";
 import { Brain, Send, Loader2, Sparkles, MessageSquarePlus } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeQuestion } from "@/lib/question-utils";
+
+const tutorSearchSchema = z.object({
+  questionId: fallback(z.string(), "").default(""),
+  subjectId: fallback(z.string(), "").default(""),
+});
 
 export const Route = createFileRoute("/_app/tutor")({
   head: () => ({ meta: [{ title: "AI Tutor — Sapientia" }] }),
+  validateSearch: zodValidator(tutorSearchSchema),
   component: TutorPage,
 });
 
@@ -25,12 +34,14 @@ type Msg = { role: "user" | "assistant"; content: string };
 
 function TutorPage() {
   const { user } = useAuth();
+  const { questionId, subjectId: searchSubjectId } = Route.useSearch();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [subjectId, setSubjectId] = useState<string>("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [primedQuestionId, setPrimedQuestionId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +53,44 @@ function TutorPage() {
       setSubjects((data as Subject[]) ?? []);
     })();
   }, []);
+
+  // Pre-select subject from URL once subjects are loaded
+  useEffect(() => {
+    if (searchSubjectId && subjects.some((s) => s.id === searchSubjectId)) {
+      setSubjectId(searchSubjectId);
+    }
+  }, [searchSubjectId, subjects]);
+
+  // If a questionId was passed in, prime the input with the question + ask for an explanation
+  useEffect(() => {
+    if (!questionId || primedQuestionId === questionId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("questions")
+        .select("*")
+        .eq("id", questionId)
+        .maybeSingle();
+      if (!data) return;
+      const q = normalizeQuestion(data as Record<string, unknown>);
+      const lines = [
+        `Please explain this question step-by-step, in a way I'll remember:`,
+        ``,
+        `**Question:** ${q.question_text}`,
+        ``,
+        ...q.options.map((o) => `- **${o.label})** ${o.text}`),
+        ``,
+        `**Correct answer:** ${q.correct_answer}`,
+        q.topic ? `**Topic:** ${q.topic}` : "",
+        ``,
+        `Walk me through *why* the correct answer is right and *why* the others are wrong. Use a worked example if it helps.`,
+      ]
+        .filter(Boolean)
+        .join("\n");
+      setInput(lines);
+      setPrimedQuestionId(questionId);
+      if (data.subject_id && !subjectId) setSubjectId(data.subject_id as string);
+    })();
+  }, [questionId, primedQuestionId, subjectId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });

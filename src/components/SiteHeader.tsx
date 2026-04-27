@@ -41,6 +41,8 @@ export function SiteHeader() {
               <NavLink to="/tutor">AI Tutor</NavLink>
               <NavLink to="/exam">Mock Exams</NavLink>
               <NavLink to="/question-bank">Question Bank</NavLink>
+              <NavLink to="/review">Review</NavLink>
+              <NavLink to="/analytics">Analytics</NavLink>
               <NavLink to="/sovereignty">My Data</NavLink>
             </>
           ) : (
@@ -102,6 +104,8 @@ export function SiteHeader() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/tutor" })}>AI Tutor</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/exam" })}>Mock Exams</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/question-bank" })}>Question Bank</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/review" })}>Review</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/analytics" })}>Analytics</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/sovereignty" })}>My Data</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
