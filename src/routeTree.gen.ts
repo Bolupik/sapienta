@@ -18,6 +18,7 @@ import { Route as AppReviewRouteImport } from './routes/_app/review'
 import { Route as AppQuestionBankRouteImport } from './routes/_app/question-bank'
 import { Route as AppExamRouteImport } from './routes/_app/exam'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppAnalyticsRouteImport } from './routes/_app/analytics'
 import { Route as AppMockWaecRouteImport } from './routes/_app/mock.waec'
 import { Route as AppMockJambRouteImport } from './routes/_app/mock.jamb'
 
@@ -65,6 +66,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppMockWaecRoute = AppMockWaecRouteImport.update({
   id: '/mock/waec',
   path: '/mock/waec',
@@ -79,6 +85,7 @@ const AppMockJambRoute = AppMockJambRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/analytics': typeof AppAnalyticsRoute
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
   '/question-bank': typeof AppQuestionBankRoute
@@ -91,6 +98,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/analytics': typeof AppAnalyticsRoute
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
   '/question-bank': typeof AppQuestionBankRoute
@@ -105,6 +113,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/exam': typeof AppExamRoute
   '/_app/question-bank': typeof AppQuestionBankRoute
@@ -119,6 +128,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/analytics'
     | '/dashboard'
     | '/exam'
     | '/question-bank'
@@ -131,6 +141,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/analytics'
     | '/dashboard'
     | '/exam'
     | '/question-bank'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/auth'
+    | '/_app/analytics'
     | '/_app/dashboard'
     | '/_app/exam'
     | '/_app/question-bank'
@@ -225,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/analytics': {
+      id: '/_app/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AppAnalyticsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/mock/waec': {
       id: '/_app/mock/waec'
       path: '/mock/waec'
@@ -243,6 +262,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppRouteChildren {
+  AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppExamRoute: typeof AppExamRoute
   AppQuestionBankRoute: typeof AppQuestionBankRoute
@@ -254,6 +274,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAnalyticsRoute: AppAnalyticsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppExamRoute: AppExamRoute,
   AppQuestionBankRoute: AppQuestionBankRoute,
