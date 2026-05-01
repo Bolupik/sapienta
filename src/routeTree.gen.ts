@@ -16,6 +16,7 @@ import { Route as AppTutorRouteImport } from './routes/_app/tutor'
 import { Route as AppSovereigntyRouteImport } from './routes/_app/sovereignty'
 import { Route as AppReviewRouteImport } from './routes/_app/review'
 import { Route as AppQuestionBankRouteImport } from './routes/_app/question-bank'
+import { Route as AppOfflineRouteImport } from './routes/_app/offline'
 import { Route as AppExamRouteImport } from './routes/_app/exam'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppAnalyticsRouteImport } from './routes/_app/analytics'
@@ -56,6 +57,11 @@ const AppQuestionBankRoute = AppQuestionBankRouteImport.update({
   path: '/question-bank',
   getParentRoute: () => AppRoute,
 } as any)
+const AppOfflineRoute = AppOfflineRouteImport.update({
+  id: '/offline',
+  path: '/offline',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppExamRoute = AppExamRouteImport.update({
   id: '/exam',
   path: '/exam',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AppAnalyticsRoute
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
+  '/offline': typeof AppOfflineRoute
   '/question-bank': typeof AppQuestionBankRoute
   '/review': typeof AppReviewRoute
   '/sovereignty': typeof AppSovereigntyRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AppAnalyticsRoute
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
+  '/offline': typeof AppOfflineRoute
   '/question-bank': typeof AppQuestionBankRoute
   '/review': typeof AppReviewRoute
   '/sovereignty': typeof AppSovereigntyRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/exam': typeof AppExamRoute
+  '/_app/offline': typeof AppOfflineRoute
   '/_app/question-bank': typeof AppQuestionBankRoute
   '/_app/review': typeof AppReviewRoute
   '/_app/sovereignty': typeof AppSovereigntyRoute
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/dashboard'
     | '/exam'
+    | '/offline'
     | '/question-bank'
     | '/review'
     | '/sovereignty'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/dashboard'
     | '/exam'
+    | '/offline'
     | '/question-bank'
     | '/review'
     | '/sovereignty'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
     | '/_app/analytics'
     | '/_app/dashboard'
     | '/_app/exam'
+    | '/_app/offline'
     | '/_app/question-bank'
     | '/_app/review'
     | '/_app/sovereignty'
@@ -223,6 +235,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppQuestionBankRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/offline': {
+      id: '/_app/offline'
+      path: '/offline'
+      fullPath: '/offline'
+      preLoaderRoute: typeof AppOfflineRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/exam': {
       id: '/_app/exam'
       path: '/exam'
@@ -265,6 +284,7 @@ interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppExamRoute: typeof AppExamRoute
+  AppOfflineRoute: typeof AppOfflineRoute
   AppQuestionBankRoute: typeof AppQuestionBankRoute
   AppReviewRoute: typeof AppReviewRoute
   AppSovereigntyRoute: typeof AppSovereigntyRoute
@@ -277,6 +297,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppExamRoute: AppExamRoute,
+  AppOfflineRoute: AppOfflineRoute,
   AppQuestionBankRoute: AppQuestionBankRoute,
   AppReviewRoute: AppReviewRoute,
   AppSovereigntyRoute: AppSovereigntyRoute,
@@ -295,12 +316,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
