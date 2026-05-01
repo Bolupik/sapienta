@@ -12,6 +12,7 @@ import {
   BookOpen,
   Sparkles,
   RotateCw,
+  HardDrive,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -149,6 +150,11 @@ function Dashboard() {
           <Link to="/review">
             <Button variant="outline" className="gap-2">
               <RotateCw className="h-4 w-4" /> Review due
+            </Button>
+          </Link>
+          <Link to="/offline">
+            <Button variant="outline" className="gap-2">
+              <HardDrive className="h-4 w-4" /> Offline
             </Button>
           </Link>
           <Link to="/analytics">
