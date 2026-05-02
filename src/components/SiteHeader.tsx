@@ -72,6 +72,7 @@ export function SiteHeader() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuItem onClick={() => navigate({ to: "/dashboard" })}>Dashboard</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/sovereignty" })}>My Learning Data</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/security" })}>Security & 2FA</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                   <LogOut className="mr-2 h-4 w-4" /> Sign out
@@ -109,6 +110,7 @@ export function SiteHeader() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/analytics" })}>Analytics</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/offline" })}>Offline packs</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/sovereignty" })}>My Data</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/security" })}>Security & 2FA</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
