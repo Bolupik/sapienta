@@ -173,7 +173,30 @@ function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mfa, setMfa] = useState<{ factorId: string; challengeId: string } | null>(
+    null
+  );
+  const [mfaCode, setMfaCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
   const navigate = useNavigate();
+
+  const startMfaChallenge = async () => {
+    const factors = await supabase.auth.mfa.listFactors();
+    const totp = factors.data?.totp?.find((f) => f.status === "verified");
+    if (!totp) {
+      // No verified factor — shouldn't happen if AAL says aal2, but bail safely.
+      toast.success("Welcome back!");
+      navigate({ to: "/dashboard" });
+      return;
+    }
+    const challenge = await supabase.auth.mfa.challenge({ factorId: totp.id });
+    if (challenge.error || !challenge.data) {
+      toast.error(challenge.error?.message ?? "Could not start 2FA challenge.");
+      await supabase.auth.signOut();
+      return;
+    }
+    setMfa({ factorId: totp.id, challengeId: challenge.data.id });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -184,14 +207,89 @@ function SignInForm() {
     }
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
-    setLoading(false);
     if (error) {
+      setLoading(false);
       toast.error(error.message);
+      return;
+    }
+    // Check if 2FA is required.
+    const aal = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    setLoading(false);
+    if (aal.data?.nextLevel === "aal2" && aal.data.currentLevel !== "aal2") {
+      await startMfaChallenge();
       return;
     }
     toast.success("Welcome back!");
     navigate({ to: "/dashboard" });
   };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mfa) return;
+    if (!/^\d{6}$/.test(mfaCode)) {
+      toast.error("Enter the 6-digit code from your authenticator app.");
+      return;
+    }
+    setVerifying(true);
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: mfa.factorId,
+      challengeId: mfa.challengeId,
+      code: mfaCode,
+    });
+    setVerifying(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Verified — welcome back!");
+    navigate({ to: "/dashboard" });
+  };
+
+  const cancelMfa = async () => {
+    setMfa(null);
+    setMfaCode("");
+    await supabase.auth.signOut();
+  };
+
+  if (mfa) {
+    return (
+      <form onSubmit={handleVerify} className="space-y-4">
+        <div className="text-center">
+          <div className="font-display text-base font-semibold">
+            Two-factor authentication
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Enter the 6-digit code from your authenticator app to finish signing
+            in.
+          </p>
+        </div>
+        <Input
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          value={mfaCode}
+          onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ""))}
+          placeholder="123 456"
+          className="font-mono tracking-[0.4em] text-center text-lg h-12"
+          autoFocus
+        />
+        <Button
+          type="submit"
+          disabled={verifying || mfaCode.length !== 6}
+          className="w-full bg-emerald text-emerald-foreground hover:bg-emerald/90 h-11"
+        >
+          {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : "Verify"}
+        </Button>
+        <button
+          type="button"
+          onClick={() => void cancelMfa()}
+          className="w-full text-xs text-muted-foreground hover:text-foreground"
+        >
+          Cancel and sign out
+        </button>
+      </form>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

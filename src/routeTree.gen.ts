@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTutorRouteImport } from './routes/_app/tutor'
 import { Route as AppSovereigntyRouteImport } from './routes/_app/sovereignty'
+import { Route as AppSecurityRouteImport } from './routes/_app/security'
 import { Route as AppReviewRouteImport } from './routes/_app/review'
 import { Route as AppQuestionBankRouteImport } from './routes/_app/question-bank'
 import { Route as AppOfflineRouteImport } from './routes/_app/offline'
@@ -45,6 +46,11 @@ const AppTutorRoute = AppTutorRouteImport.update({
 const AppSovereigntyRoute = AppSovereigntyRouteImport.update({
   id: '/sovereignty',
   path: '/sovereignty',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSecurityRoute = AppSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
   getParentRoute: () => AppRoute,
 } as any)
 const AppReviewRoute = AppReviewRouteImport.update({
@@ -97,6 +103,7 @@ export interface FileRoutesByFullPath {
   '/offline': typeof AppOfflineRoute
   '/question-bank': typeof AppQuestionBankRoute
   '/review': typeof AppReviewRoute
+  '/security': typeof AppSecurityRoute
   '/sovereignty': typeof AppSovereigntyRoute
   '/tutor': typeof AppTutorRoute
   '/mock/jamb': typeof AppMockJambRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/offline': typeof AppOfflineRoute
   '/question-bank': typeof AppQuestionBankRoute
   '/review': typeof AppReviewRoute
+  '/security': typeof AppSecurityRoute
   '/sovereignty': typeof AppSovereigntyRoute
   '/tutor': typeof AppTutorRoute
   '/mock/jamb': typeof AppMockJambRoute
@@ -127,6 +135,7 @@ export interface FileRoutesById {
   '/_app/offline': typeof AppOfflineRoute
   '/_app/question-bank': typeof AppQuestionBankRoute
   '/_app/review': typeof AppReviewRoute
+  '/_app/security': typeof AppSecurityRoute
   '/_app/sovereignty': typeof AppSovereigntyRoute
   '/_app/tutor': typeof AppTutorRoute
   '/_app/mock/jamb': typeof AppMockJambRoute
@@ -143,6 +152,7 @@ export interface FileRouteTypes {
     | '/offline'
     | '/question-bank'
     | '/review'
+    | '/security'
     | '/sovereignty'
     | '/tutor'
     | '/mock/jamb'
@@ -157,6 +167,7 @@ export interface FileRouteTypes {
     | '/offline'
     | '/question-bank'
     | '/review'
+    | '/security'
     | '/sovereignty'
     | '/tutor'
     | '/mock/jamb'
@@ -172,6 +183,7 @@ export interface FileRouteTypes {
     | '/_app/offline'
     | '/_app/question-bank'
     | '/_app/review'
+    | '/_app/security'
     | '/_app/sovereignty'
     | '/_app/tutor'
     | '/_app/mock/jamb'
@@ -219,6 +231,13 @@ declare module '@tanstack/react-router' {
       path: '/sovereignty'
       fullPath: '/sovereignty'
       preLoaderRoute: typeof AppSovereigntyRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/security': {
+      id: '/_app/security'
+      path: '/security'
+      fullPath: '/security'
+      preLoaderRoute: typeof AppSecurityRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/review': {
@@ -287,6 +306,7 @@ interface AppRouteChildren {
   AppOfflineRoute: typeof AppOfflineRoute
   AppQuestionBankRoute: typeof AppQuestionBankRoute
   AppReviewRoute: typeof AppReviewRoute
+  AppSecurityRoute: typeof AppSecurityRoute
   AppSovereigntyRoute: typeof AppSovereigntyRoute
   AppTutorRoute: typeof AppTutorRoute
   AppMockJambRoute: typeof AppMockJambRoute
@@ -300,6 +320,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppOfflineRoute: AppOfflineRoute,
   AppQuestionBankRoute: AppQuestionBankRoute,
   AppReviewRoute: AppReviewRoute,
+  AppSecurityRoute: AppSecurityRoute,
   AppSovereigntyRoute: AppSovereigntyRoute,
   AppTutorRoute: AppTutorRoute,
   AppMockJambRoute: AppMockJambRoute,
