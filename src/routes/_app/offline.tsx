@@ -491,12 +491,14 @@ function PackCard({
   onOpen,
   onDelete,
   onRefresh,
+  onExport,
   refreshing,
 }: {
   pack: PackMeta;
   onOpen: () => void;
   onDelete: () => void;
   onRefresh?: () => void;
+  onExport?: () => void;
   refreshing?: boolean;
 }) {
   const downloaded = new Date(pack.downloaded_at);
@@ -550,6 +552,17 @@ function PackCard({
             Refresh
           </Button>
         )}
+        {onExport && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onExport}
+            className="gap-1.5"
+            title="Save this pack as a file in your Downloads folder"
+          >
+            <Save className="h-3.5 w-3.5" /> Save to phone
+          </Button>
+        )}
         <Button
           size="sm"
           variant="ghost"
@@ -560,6 +573,43 @@ function PackCard({
         </Button>
       </div>
     </div>
+  );
+}
+
+/* ---------- Import + install helpers ---------- */
+
+function ImportButton({ onPick }: { onPick: (file: File) => void }) {
+  return (
+    <label className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card hover:bg-muted/40 px-3 py-1.5 text-xs font-medium cursor-pointer transition">
+      <Upload className="h-3.5 w-3.5" />
+      Import pack file
+      <input
+        type="file"
+        accept="application/json,.json"
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onPick(f);
+          e.currentTarget.value = "";
+        }}
+      />
+    </label>
+  );
+}
+
+function InstallHint() {
+  // Detect display-mode standalone (already installed) so we don't nag.
+  const [installed, setInstalled] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    setInstalled(window.matchMedia("(display-mode: standalone)").matches);
+  }, []);
+  if (installed) return null;
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-border px-3 py-1.5 text-xs text-muted-foreground">
+      <Smartphone className="h-3.5 w-3.5" />
+      Add to Home Screen for app-style access
+    </span>
   );
 }
 
