@@ -21,6 +21,11 @@ import {
   Clock,
   Library,
   AlertTriangle,
+  Pause,
+  X,
+  Save,
+  Upload,
+  Smartphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -28,8 +33,15 @@ import {
   listPacks,
   deletePack,
   getPackQuestions,
+  cancelDownload,
+  listInProgressDownloads,
+  clearDownloadProgress,
+  downloadPackToFile,
+  importPackFromFile,
+  DownloadCancelled,
   type PackMeta,
   type OfflineQuestion,
+  type DownloadProgress,
 } from "@/lib/offline-packs";
 import { shuffle, formatDuration } from "@/lib/question-utils";
 import { useOnlineStatus } from "@/hooks/use-online-status";
@@ -63,6 +75,7 @@ function OfflinePage() {
   const [downloading, setDownloading] = useState<Record<string, { loaded: number; total: number }>>(
     {}
   );
+  const [pending, setPending] = useState<DownloadProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>({ kind: "list" });
 
@@ -70,14 +83,16 @@ function OfflinePage() {
   useEffect(() => {
     if (!user) return;
     void (async () => {
-      const [subs, ps] = await Promise.all([
+      const [subs, ps, inProg] = await Promise.all([
         online
           ? supabase.from("subjects").select("id, slug, name").order("name")
           : Promise.resolve({ data: null }),
         listPacks(user.id),
+        listInProgressDownloads(user.id),
       ]);
       if (subs.data) setSubjects(subs.data as Subject[]);
       setPacks(ps);
+      setPending(inProg);
       setLoading(false);
     })();
   }, [user, online]);
@@ -103,16 +118,58 @@ function OfflinePage() {
         const others = prev.filter((p) => p.subject_id !== subject.id);
         return [meta, ...others];
       });
+      setPending((prev) => prev.filter((p) => p.subject_id !== subject.id));
       toast.success(`${subject.name} ready offline · ${meta.question_count} questions`);
     } catch (e) {
       console.error(e);
-      toast.error("Download failed. Check your connection and try again.");
+      // Refresh pending list — server saved a checkpoint we can resume from.
+      const inProg = await listInProgressDownloads(user.id);
+      setPending(inProg);
+      if (e instanceof DownloadCancelled) {
+        toast.info(`${subject.name} download paused — resume any time.`);
+      } else {
+        toast.error(
+          "Download interrupted. Your progress is saved — tap Resume when you're back online."
+        );
+      }
     } finally {
       setDownloading((d) => {
         const next = { ...d };
         delete next[subject.id];
         return next;
       });
+    }
+  };
+
+  const handleCancel = (subjectId: string) => {
+    cancelDownload(user!.id, subjectId);
+  };
+
+  const handleAbandon = async (p: DownloadProgress) => {
+    if (!user) return;
+    if (!confirm(`Discard partial download of "${p.subject_name}"?`)) return;
+    await clearDownloadProgress(user.id, p.subject_id);
+    setPending((prev) => prev.filter((x) => x.subject_id !== p.subject_id));
+  };
+
+  const handleExport = async (pack: PackMeta) => {
+    if (!user) return;
+    const ok = await downloadPackToFile(user.id, pack.subject_id);
+    if (ok) toast.success(`Saved ${pack.subject_name} to your Downloads folder.`);
+    else toast.error("Couldn't export this pack.");
+  };
+
+  const handleImport = async (file: File) => {
+    if (!user) return;
+    try {
+      const meta = await importPackFromFile(user.id, file);
+      setPacks((prev) => {
+        const others = prev.filter((p) => p.subject_id !== meta.subject_id);
+        return [meta, ...others];
+      });
+      toast.success(`Imported ${meta.subject_name} · ${meta.question_count} questions`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Import failed.");
     }
   };
 
@@ -158,8 +215,9 @@ function OfflinePage() {
 
   // Subject merge — show downloaded packs and (when online) all subjects too.
   const downloadedSubjectIds = new Set(packs.map((p) => p.subject_id));
+  const pendingSubjectIds = new Set(pending.map((p) => p.subject_id));
   const availableSubjects = subjects.filter(
-    (s) => !downloadedSubjectIds.has(s.id)
+    (s) => !downloadedSubjectIds.has(s.id) && !pendingSubjectIds.has(s.id)
   );
 
   const totalKb = packs.reduce((s, p) => s + p.size_estimate_kb, 0);
@@ -200,8 +258,99 @@ function OfflinePage() {
             classroom, NEPA blackout, anywhere. Offline answers don't sync to
             your stats; treat it as pure practice.
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <ImportButton onPick={handleImport} />
+            <InstallHint />
+          </div>
         </div>
       </div>
+
+      {/* Resumable downloads */}
+      {pending.length > 0 && (
+        <section className="mb-8">
+          <h2 className="font-display text-xl font-semibold mb-3 flex items-center gap-2">
+            <Pause className="h-5 w-5 text-accent" />
+            In progress
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {pending.map((p) => {
+              const dl = downloading[p.subject_id];
+              const liveLoaded = dl?.loaded ?? p.fetched_ids.length;
+              const liveTotal = dl?.total || p.total || liveLoaded;
+              const pct =
+                liveTotal > 0 ? Math.round((liveLoaded / liveTotal) * 100) : 0;
+              const active = !!dl;
+              return (
+                <div
+                  key={p.key}
+                  className="rounded-2xl border border-accent/30 bg-accent/5 p-4 flex flex-col gap-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="font-display font-semibold leading-tight truncate">
+                        {p.subject_name}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {liveLoaded}/{liveTotal || "?"} questions ·{" "}
+                        {p.status === "error" ? "interrupted" : "paused"}
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="border-accent/40 text-accent-foreground shrink-0">
+                      {pct}%
+                    </Badge>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-hero transition-all"
+                      style={{ width: `${Math.max(2, pct)}%` }}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {active ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleCancel(p.subject_id)}
+                        className="gap-1.5"
+                      >
+                        <Pause className="h-3.5 w-3.5" /> Pause
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          void handleDownload({
+                            id: p.subject_id,
+                            slug: p.subject_slug,
+                            name: p.subject_name,
+                          })
+                        }
+                        disabled={!online}
+                        className="bg-emerald text-emerald-foreground hover:bg-emerald/90 gap-1.5"
+                      >
+                        <RotateCw className="h-3.5 w-3.5" /> Resume
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => void handleAbandon(p)}
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5"
+                    >
+                      <X className="h-3.5 w-3.5" /> Discard
+                    </Button>
+                  </div>
+                  {!online && !active && (
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                      <WifiOff className="h-3 w-3" /> Connect to resume.
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Storage summary */}
       {packs.length > 0 && (
@@ -247,6 +396,7 @@ function OfflinePage() {
                 pack={p}
                 onOpen={() => setMode({ kind: "browse", pack: p })}
                 onDelete={() => void handleDelete(p)}
+                onExport={() => void handleExport(p)}
                 onRefresh={
                   online
                     ? () =>
