@@ -37,6 +37,8 @@ import {
   listInProgressDownloads,
   clearDownloadProgress,
   downloadPackToFile,
+  downloadPackAsPdf,
+  downloadPackAsDocx,
   importPackFromFile,
   DownloadCancelled,
   type PackMeta,
@@ -152,11 +154,27 @@ function OfflinePage() {
     setPending((prev) => prev.filter((x) => x.subject_id !== p.subject_id));
   };
 
-  const handleExport = async (pack: PackMeta) => {
+  const handleExport = async (
+    pack: PackMeta,
+    format: "json" | "pdf" | "docx"
+  ) => {
     if (!user) return;
-    const ok = await downloadPackToFile(user.id, pack.subject_id);
-    if (ok) toast.success(`Saved ${pack.subject_name} to your Downloads folder.`);
-    else toast.error("Couldn't export this pack.");
+    try {
+      const ok =
+        format === "pdf"
+          ? await downloadPackAsPdf(user.id, pack.subject_id)
+          : format === "docx"
+            ? await downloadPackAsDocx(user.id, pack.subject_id)
+            : await downloadPackToFile(user.id, pack.subject_id);
+      if (ok)
+        toast.success(
+          `Saved ${pack.subject_name} as ${format.toUpperCase()} to your Downloads folder.`
+        );
+      else toast.error("Couldn't export this pack.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Export failed.");
+    }
   };
 
   const handleImport = async (file: File) => {
@@ -396,7 +414,7 @@ function OfflinePage() {
                 pack={p}
                 onOpen={() => setMode({ kind: "browse", pack: p })}
                 onDelete={() => void handleDelete(p)}
-                onExport={() => void handleExport(p)}
+                onExport={(fmt) => void handleExport(p, fmt)}
                 onRefresh={
                   online
                     ? () =>
