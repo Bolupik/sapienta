@@ -5,6 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
   Download,
   Trash2,
   WifiOff,
@@ -26,6 +34,9 @@ import {
   Save,
   Upload,
   Smartphone,
+  FileText,
+  FileType2,
+  FileJson,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -37,6 +48,8 @@ import {
   listInProgressDownloads,
   clearDownloadProgress,
   downloadPackToFile,
+  downloadPackAsPdf,
+  downloadPackAsDocx,
   importPackFromFile,
   DownloadCancelled,
   type PackMeta,
@@ -152,11 +165,27 @@ function OfflinePage() {
     setPending((prev) => prev.filter((x) => x.subject_id !== p.subject_id));
   };
 
-  const handleExport = async (pack: PackMeta) => {
+  const handleExport = async (
+    pack: PackMeta,
+    format: "json" | "pdf" | "docx"
+  ) => {
     if (!user) return;
-    const ok = await downloadPackToFile(user.id, pack.subject_id);
-    if (ok) toast.success(`Saved ${pack.subject_name} to your Downloads folder.`);
-    else toast.error("Couldn't export this pack.");
+    try {
+      const ok =
+        format === "pdf"
+          ? await downloadPackAsPdf(user.id, pack.subject_id)
+          : format === "docx"
+            ? await downloadPackAsDocx(user.id, pack.subject_id)
+            : await downloadPackToFile(user.id, pack.subject_id);
+      if (ok)
+        toast.success(
+          `Saved ${pack.subject_name} as ${format.toUpperCase()} to your Downloads folder.`
+        );
+      else toast.error("Couldn't export this pack.");
+    } catch (e) {
+      console.error(e);
+      toast.error("Export failed.");
+    }
   };
 
   const handleImport = async (file: File) => {
@@ -396,7 +425,7 @@ function OfflinePage() {
                 pack={p}
                 onOpen={() => setMode({ kind: "browse", pack: p })}
                 onDelete={() => void handleDelete(p)}
-                onExport={() => void handleExport(p)}
+                onExport={(fmt) => void handleExport(p, fmt)}
                 onRefresh={
                   online
                     ? () =>
@@ -498,7 +527,7 @@ function PackCard({
   onOpen: () => void;
   onDelete: () => void;
   onRefresh?: () => void;
-  onExport?: () => void;
+  onExport?: (format: "json" | "pdf" | "docx") => void;
   refreshing?: boolean;
 }) {
   const downloaded = new Date(pack.downloaded_at);
@@ -553,15 +582,35 @@ function PackCard({
           </Button>
         )}
         {onExport && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onExport}
-            className="gap-1.5"
-            title="Save this pack as a file in your Downloads folder"
-          >
-            <Save className="h-3.5 w-3.5" /> Save to phone
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1.5"
+                title="Save this pack to your Downloads folder"
+              >
+                <Save className="h-3.5 w-3.5" /> Save to phone
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Choose a format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onExport("pdf")}>
+                <FileText className="h-4 w-4 mr-2" />
+                PDF document
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport("docx")}>
+                <FileType2 className="h-4 w-4 mr-2" />
+                Microsoft Word (.docx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport("json")}>
+                <FileJson className="h-4 w-4 mr-2" />
+                Sapientia pack (.json)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         <Button
           size="sm"

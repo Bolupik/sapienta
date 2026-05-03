@@ -416,14 +416,198 @@ export async function exportPackToBlob(
 export async function downloadPackToFile(userId: string, subjectId: string) {
   const out = await exportPackToBlob(userId, subjectId);
   if (!out) return false;
-  const url = URL.createObjectURL(out.blob);
+  triggerBrowserDownload(out.blob, out.filename);
+  return true;
+}
+
+function triggerBrowserDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = out.filename;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function letterLabel(i: number): string {
+  return String.fromCharCode(65 + i); // A, B, C...
+}
+
+function correctIndexFor(q: OfflineQuestion): number {
+  // Try to align correct_answer to options index, supports letter or text.
+  const ans = (q.correct_answer ?? "").toString().trim();
+  if (!ans) return -1;
+  const upper = ans.toUpperCase();
+  if (/^[A-Z]$/.test(upper)) {
+    const idx = upper.charCodeAt(0) - 65;
+    if (idx >= 0 && idx < q.options.length) return idx;
+  }
+  const idx = q.options.findIndex(
+    (o) => o.toString().trim().toLowerCase() === ans.toLowerCase()
+  );
+  return idx;
+}
+
+/* ---------- PDF export ---------- */
+
+export async function downloadPackAsPdf(userId: string, subjectId: string) {
+  const meta = await getPack(userId, subjectId);
+  if (!meta) return false;
+  const questions = await getPackQuestions(userId, subjectId);
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+
+  const marginX = 48;
+  const marginY = 56;
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const usableW = pageW - marginX * 2;
+  let y = marginY;
+
+  const addLine = (
+    text: string,
+    opts: { size?: number; bold?: boolean; gap?: number; indent?: number } = {}
+  ) => {
+    const size = opts.size ?? 11;
+    const indent = opts.indent ?? 0;
+    doc.setFont("helvetica", opts.bold ? "bold" : "normal");
+    doc.setFontSize(size);
+    const wrapped = doc.splitTextToSize(text, usableW - indent) as string[];
+    for (const ln of wrapped) {
+      if (y > pageH - marginY) {
+        doc.addPage();
+        y = marginY;
+      }
+      doc.text(ln, marginX + indent, y);
+      y += size * 1.25;
+    }
+    if (opts.gap) y += opts.gap;
+  };
+
+  // Cover
+  addLine(meta.subject_name, { size: 22, bold: true, gap: 6 });
+  addLine(`${meta.question_count} questions · Sapientia offline pack`, {
+    size: 11,
+    gap: 4,
+  });
+  addLine(`Exported ${new Date().toLocaleString()}`, { size: 10, gap: 14 });
+
+  questions.forEach((q, i) => {
+    if (y > pageH - marginY - 80) {
+      doc.addPage();
+      y = marginY;
+    }
+    const meta2 = [q.topic, q.year ? `${q.year}` : null, q.exam_type?.toUpperCase()]
+      .filter(Boolean)
+      .join(" · ");
+    if (meta2) addLine(meta2, { size: 9 });
+    addLine(`Q${i + 1}. ${q.question_text}`, { size: 11, bold: true, gap: 2 });
+    q.options.forEach((opt, oi) => {
+      addLine(`${letterLabel(oi)}. ${opt}`, { size: 11, indent: 16 });
+    });
+    const ci = correctIndexFor(q);
+    if (ci >= 0) addLine(`Answer: ${letterLabel(ci)}`, { size: 10, bold: true });
+    if (q.explanation) addLine(`Explanation: ${q.explanation}`, { size: 10 });
+    y += 10;
+  });
+
+  const safe = meta.subject_slug.replace(/[^a-z0-9-]/gi, "-");
+  const blob = doc.output("blob");
+  triggerBrowserDownload(blob, `sapientia-${safe}-pack.pdf`);
+  return true;
+}
+
+/* ---------- DOCX export ---------- */
+
+export async function downloadPackAsDocx(userId: string, subjectId: string) {
+  const meta = await getPack(userId, subjectId);
+  if (!meta) return false;
+  const questions = await getPackQuestions(userId, subjectId);
+  const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } =
+    await import("docx");
+
+  const children: InstanceType<typeof Paragraph>[] = [];
+  children.push(
+    new Paragraph({
+      heading: HeadingLevel.HEADING_1,
+      children: [new TextRun({ text: meta.subject_name, bold: true })],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `${meta.question_count} questions · Sapientia offline pack`,
+          italics: true,
+        }),
+      ],
+    }),
+    new Paragraph({
+      alignment: AlignmentType.LEFT,
+      children: [
+        new TextRun({
+          text: `Exported ${new Date().toLocaleString()}`,
+          size: 18,
+        }),
+      ],
+    }),
+    new Paragraph({ children: [new TextRun("")] })
+  );
+
+  questions.forEach((q, i) => {
+    const meta2 = [q.topic, q.year ? `${q.year}` : null, q.exam_type?.toUpperCase()]
+      .filter(Boolean)
+      .join(" · ");
+    if (meta2) {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: meta2, size: 18, color: "666666" })],
+        })
+      );
+    }
+    children.push(
+      new Paragraph({
+        children: [
+          new TextRun({ text: `Q${i + 1}. `, bold: true }),
+          new TextRun({ text: q.question_text }),
+        ],
+      })
+    );
+    q.options.forEach((opt, oi) => {
+      children.push(
+        new Paragraph({
+          children: [new TextRun(`${letterLabel(oi)}. ${opt}`)],
+        })
+      );
+    });
+    const ci = correctIndexFor(q);
+    if (ci >= 0) {
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: "Answer: ", bold: true }),
+            new TextRun(letterLabel(ci)),
+          ],
+        })
+      );
+    }
+    if (q.explanation) {
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: "Explanation: ", bold: true }),
+            new TextRun(q.explanation),
+          ],
+        })
+      );
+    }
+    children.push(new Paragraph({ children: [new TextRun("")] }));
+  });
+
+  const doc = new Document({ sections: [{ children }] });
+  const blob = await Packer.toBlob(doc);
+  const safe = meta.subject_slug.replace(/[^a-z0-9-]/gi, "-");
+  triggerBrowserDownload(blob, `sapientia-${safe}-pack.docx`);
   return true;
 }
 
