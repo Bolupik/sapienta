@@ -34,6 +34,9 @@ import {
   Save,
   Upload,
   Smartphone,
+  FileText,
+  FileType2,
+  FileJson,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
