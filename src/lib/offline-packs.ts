@@ -788,7 +788,7 @@ export async function downloadPackAsDocx(userId: string, subjectId: string) {
     q.options.forEach((opt, oi) => {
       children.push(
         new Paragraph({
-          children: [new TextRun(`${letterLabel(oi)}. ${opt}`)],
+          children: [new TextRun(`${opt.label || letterLabel(oi)}. ${opt.text}`)],
         })
       );
     });
