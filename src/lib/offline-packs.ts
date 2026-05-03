@@ -672,7 +672,7 @@ export async function downloadPackAsPdf(userId: string, subjectId: string) {
       });
 
       q.options.forEach((opt, oi) => {
-        const label = `${letterLabel(oi)}.`;
+        const label = `${opt.label || letterLabel(oi)}.`;
         // Draw the letter, then the option text with hanging indent so wrapped
         // lines align with the option text rather than the letter.
         const letterX = marginX + 14;
@@ -680,7 +680,7 @@ export async function downloadPackAsPdf(userId: string, subjectId: string) {
         const textW = pageW - marginX - textX;
         const lineH = 11 * 1.35;
 
-        const lines = measureLines(opt, 11, textW);
+        const lines = measureLines(opt.text, 11, textW);
         ensureSpace(lineH);
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
