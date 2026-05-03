@@ -524,7 +524,7 @@ function PackCard({
   onOpen: () => void;
   onDelete: () => void;
   onRefresh?: () => void;
-  onExport?: () => void;
+  onExport?: (format: "json" | "pdf" | "docx") => void;
   refreshing?: boolean;
 }) {
   const downloaded = new Date(pack.downloaded_at);
@@ -579,15 +579,35 @@ function PackCard({
           </Button>
         )}
         {onExport && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onExport}
-            className="gap-1.5"
-            title="Save this pack as a file in your Downloads folder"
-          >
-            <Save className="h-3.5 w-3.5" /> Save to phone
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="gap-1.5"
+                title="Save this pack to your Downloads folder"
+              >
+                <Save className="h-3.5 w-3.5" /> Save to phone
+                <ChevronDown className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Choose a format</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onExport("pdf")}>
+                <FileText className="h-4 w-4 mr-2" />
+                PDF document
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport("docx")}>
+                <FileType2 className="h-4 w-4 mr-2" />
+                Microsoft Word (.docx)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onExport("json")}>
+                <FileJson className="h-4 w-4 mr-2" />
+                Sapientia pack (.json)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
         <Button
           size="sm"
