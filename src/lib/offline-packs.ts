@@ -445,7 +445,7 @@ function correctIndexFor(q: OfflineQuestion): number {
     if (idx >= 0 && idx < q.options.length) return idx;
   }
   const idx = q.options.findIndex(
-    (o) => o.toString().trim().toLowerCase() === ans.toLowerCase()
+    (o) => o.text.trim().toLowerCase() === ans.toLowerCase()
   );
   return idx;
 }
