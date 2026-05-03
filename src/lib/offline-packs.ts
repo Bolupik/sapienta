@@ -445,7 +445,7 @@ function correctIndexFor(q: OfflineQuestion): number {
     if (idx >= 0 && idx < q.options.length) return idx;
   }
   const idx = q.options.findIndex(
-    (o) => o.toString().trim().toLowerCase() === ans.toLowerCase()
+    (o) => o.text.trim().toLowerCase() === ans.toLowerCase()
   );
   return idx;
 }
@@ -459,59 +459,271 @@ export async function downloadPackAsPdf(userId: string, subjectId: string) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
-  const marginX = 48;
-  const marginY = 56;
+  const marginX = 54;
+  const marginTop = 72; // room for running header
+  const marginBottom = 56; // room for footer
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
   const usableW = pageW - marginX * 2;
-  let y = marginY;
 
-  const addLine = (
+  // Section spacing (consistent throughout the document)
+  const SP = {
+    afterMeta: 4,
+    afterQuestion: 6,
+    betweenOptions: 2,
+    afterOptions: 6,
+    afterAnswer: 2,
+    afterExplanation: 0,
+    betweenQuestions: 16,
+  };
+
+  // Group questions by exam type so WAEC + JAMB get clear sections.
+  const groupOrder: ("waec" | "jamb" | "both" | "other")[] = [
+    "waec",
+    "jamb",
+    "both",
+    "other",
+  ];
+  const groups = new Map<string, OfflineQuestion[]>();
+  for (const q of questions) {
+    const key = (q.exam_type ?? "other") as string;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(q);
+  }
+  const orderedKeys = [
+    ...groupOrder.filter((k) => groups.has(k)),
+    ...[...groups.keys()].filter((k) => !groupOrder.includes(k as never)),
+  ];
+
+  let currentSectionLabel = "";
+  let y = marginTop;
+
+  const drawHeaderFooter = () => {
+    const pageNum = doc.getNumberOfPages();
+    // Header
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.setTextColor(40);
+    doc.text(meta.subject_name, marginX, 36);
+    if (currentSectionLabel) {
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(110);
+      doc.text(currentSectionLabel, pageW - marginX, 36, { align: "right" });
+    }
+    doc.setDrawColor(220);
+    doc.setLineWidth(0.5);
+    doc.line(marginX, 44, pageW - marginX, 44);
+
+    // Footer
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(130);
+    doc.text("Sapientia · Offline Pack", marginX, pageH - 28);
+    doc.text(`Page ${pageNum}`, pageW - marginX, pageH - 28, {
+      align: "right",
+    });
+    doc.setTextColor(0);
+  };
+
+  const newPage = () => {
+    doc.addPage();
+    y = marginTop;
+    drawHeaderFooter();
+  };
+
+  const ensureSpace = (needed: number) => {
+    if (y + needed > pageH - marginBottom) newPage();
+  };
+
+  const measureLines = (
     text: string,
-    opts: { size?: number; bold?: boolean; gap?: number; indent?: number } = {}
+    size: number,
+    width: number
+  ): string[] => {
+    doc.setFontSize(size);
+    return doc.splitTextToSize(text, width) as string[];
+  };
+
+  // Draw text with optional hanging indent (continuation lines indent further).
+  const drawText = (
+    text: string,
+    opts: {
+      size?: number;
+      bold?: boolean;
+      x?: number;
+      width?: number;
+      hangingIndent?: number;
+      color?: number;
+      gap?: number;
+    } = {}
   ) => {
     const size = opts.size ?? 11;
-    const indent = opts.indent ?? 0;
+    const x = opts.x ?? marginX;
+    const width = opts.width ?? pageW - marginX - x;
+    const hang = opts.hangingIndent ?? 0;
+    const lineH = size * 1.35;
+
     doc.setFont("helvetica", opts.bold ? "bold" : "normal");
     doc.setFontSize(size);
-    const wrapped = doc.splitTextToSize(text, usableW - indent) as string[];
-    for (const ln of wrapped) {
-      if (y > pageH - marginY) {
-        doc.addPage();
-        y = marginY;
+    doc.setTextColor(opts.color ?? 0);
+
+    const firstLines = measureLines(text, size, width);
+    if (firstLines.length === 0) return;
+
+    // First line at x, remaining lines wrap with hanging indent.
+    ensureSpace(lineH);
+    doc.text(firstLines[0], x, y);
+    y += lineH;
+
+    if (firstLines.length > 1 && hang > 0) {
+      // Re-wrap the remainder against narrower width
+      const remainder = firstLines.slice(1).join(" ");
+      const wrapped = measureLines(remainder, size, width - hang);
+      for (const ln of wrapped) {
+        ensureSpace(lineH);
+        doc.text(ln, x + hang, y);
+        y += lineH;
       }
-      doc.text(ln, marginX + indent, y);
-      y += size * 1.25;
+    } else {
+      for (let i = 1; i < firstLines.length; i++) {
+        ensureSpace(lineH);
+        doc.text(firstLines[i], x, y);
+        y += lineH;
+      }
     }
     if (opts.gap) y += opts.gap;
   };
 
-  // Cover
-  addLine(meta.subject_name, { size: 22, bold: true, gap: 6 });
-  addLine(`${meta.question_count} questions · Sapientia offline pack`, {
-    size: 11,
-    gap: 4,
-  });
-  addLine(`Exported ${new Date().toLocaleString()}`, { size: 10, gap: 14 });
+  const sectionLabelFor = (key: string) =>
+    key === "waec"
+      ? "WAEC Questions"
+      : key === "jamb"
+        ? "JAMB Questions"
+        : key === "both"
+          ? "WAEC & JAMB Questions"
+          : "Additional Questions";
 
-  questions.forEach((q, i) => {
-    if (y > pageH - marginY - 80) {
-      doc.addPage();
-      y = marginY;
+  // Cover page
+  drawHeaderFooter();
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(24);
+  doc.text(meta.subject_name, marginX, marginTop + 30);
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(90);
+  doc.text(
+    `${meta.question_count} questions · WAEC & JAMB practice pack`,
+    marginX,
+    marginTop + 54
+  );
+  doc.setFontSize(10);
+  doc.text(
+    `Exported ${new Date().toLocaleString()}`,
+    marginX,
+    marginTop + 72
+  );
+  doc.setTextColor(0);
+  y = marginTop + 110;
+
+  let qIndex = 0;
+  for (const key of orderedKeys) {
+    const list = groups.get(key)!;
+    if (list.length === 0) continue;
+    currentSectionLabel = sectionLabelFor(key);
+
+    // Section header — always start on a fresh page for clarity
+    newPage();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.text(currentSectionLabel, marginX, y);
+    y += 22;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(110);
+    doc.text(`${list.length} questions`, marginX, y);
+    doc.setTextColor(0);
+    y += 18;
+
+    for (const q of list) {
+      qIndex += 1;
+
+      // Estimate the height of the question header to keep it with at least
+      // one option.
+      const questionLines = measureLines(
+        `Q${qIndex}. ${q.question_text}`,
+        11,
+        usableW
+      );
+      const minBlock = questionLines.length * 11 * 1.35 + 11 * 1.35 + 12;
+      ensureSpace(minBlock);
+
+      const tags = [q.topic, q.year ? `${q.year}` : null]
+        .filter(Boolean)
+        .join(" · ");
+      if (tags) {
+        drawText(tags, { size: 9, color: 130, gap: 2 });
+      }
+
+      drawText(`Q${qIndex}. ${q.question_text}`, {
+        size: 11,
+        bold: true,
+        hangingIndent: 22,
+        gap: SP.afterQuestion,
+      });
+
+      q.options.forEach((opt, oi) => {
+        const label = `${opt.label || letterLabel(oi)}.`;
+        // Draw the letter, then the option text with hanging indent so wrapped
+        // lines align with the option text rather than the letter.
+        const letterX = marginX + 14;
+        const textX = letterX + 18;
+        const textW = pageW - marginX - textX;
+        const lineH = 11 * 1.35;
+
+        const lines = measureLines(opt.text, 11, textW);
+        ensureSpace(lineH);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(label, letterX, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(lines[0] ?? "", textX, y);
+        y += lineH;
+        for (let i = 1; i < lines.length; i++) {
+          ensureSpace(lineH);
+          doc.text(lines[i], textX, y);
+          y += lineH;
+        }
+        if (oi < q.options.length - 1) y += SP.betweenOptions;
+      });
+      y += SP.afterOptions;
+
+      const ci = correctIndexFor(q);
+      if (ci >= 0) {
+        drawText(`Answer: ${letterLabel(ci)}`, {
+          size: 10,
+          bold: true,
+          color: 30,
+          gap: SP.afterAnswer,
+        });
+      }
+      if (q.explanation) {
+        drawText(`Explanation: ${q.explanation}`, {
+          size: 10,
+          color: 80,
+          hangingIndent: 14,
+          gap: SP.afterExplanation,
+        });
+      }
+
+      y += SP.betweenQuestions;
+      // Light divider between questions
+      if (y < pageH - marginBottom) {
+        doc.setDrawColor(235);
+        doc.setLineWidth(0.4);
+        doc.line(marginX, y - 10, pageW - marginX, y - 10);
+      }
     }
-    const meta2 = [q.topic, q.year ? `${q.year}` : null, q.exam_type?.toUpperCase()]
-      .filter(Boolean)
-      .join(" · ");
-    if (meta2) addLine(meta2, { size: 9 });
-    addLine(`Q${i + 1}. ${q.question_text}`, { size: 11, bold: true, gap: 2 });
-    q.options.forEach((opt, oi) => {
-      addLine(`${letterLabel(oi)}. ${opt}`, { size: 11, indent: 16 });
-    });
-    const ci = correctIndexFor(q);
-    if (ci >= 0) addLine(`Answer: ${letterLabel(ci)}`, { size: 10, bold: true });
-    if (q.explanation) addLine(`Explanation: ${q.explanation}`, { size: 10 });
-    y += 10;
-  });
+  }
 
   const safe = meta.subject_slug.replace(/[^a-z0-9-]/gi, "-");
   const blob = doc.output("blob");
@@ -576,7 +788,7 @@ export async function downloadPackAsDocx(userId: string, subjectId: string) {
     q.options.forEach((opt, oi) => {
       children.push(
         new Paragraph({
-          children: [new TextRun(`${letterLabel(oi)}. ${opt}`)],
+          children: [new TextRun(`${opt.label || letterLabel(oi)}. ${opt.text}`)],
         })
       );
     });
