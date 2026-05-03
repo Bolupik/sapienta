@@ -818,7 +818,53 @@ export async function downloadPackAsDocx(userId: string, subjectId: string) {
     new Paragraph({ children: [new TextRun("")] })
   );
 
-  questions.forEach((q, i) => {
+  type DocxAnswer = {
+    n: number;
+    section: string;
+    answer: string | null;
+    explanation: string | null;
+  };
+  const answerKey: DocxAnswer[] = [];
+
+  // Group by exam type for clearer sections (mirrors PDF layout).
+  const groupOrder: ("waec" | "jamb" | "both" | "other")[] = [
+    "waec",
+    "jamb",
+    "both",
+    "other",
+  ];
+  const groups = new Map<string, OfflineQuestion[]>();
+  for (const q of questions) {
+    const key = (q.exam_type ?? "other") as string;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(q);
+  }
+  const orderedKeys = [
+    ...groupOrder.filter((k) => groups.has(k)),
+    ...[...groups.keys()].filter((k) => !groupOrder.includes(k as never)),
+  ];
+  const sectionLabelFor = (k: string) =>
+    k === "waec"
+      ? "WAEC Questions"
+      : k === "jamb"
+        ? "JAMB Questions"
+        : k === "both"
+          ? "WAEC & JAMB Questions"
+          : "Additional Questions";
+
+  let qIndex = 0;
+  for (const key of orderedKeys) {
+    const list = groups.get(key) ?? [];
+    if (list.length === 0) continue;
+    const sectionLabel = sectionLabelFor(key);
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        children: [new TextRun({ text: sectionLabel, bold: true })],
+      })
+    );
+    for (const q of list) {
+      qIndex += 1;
     const meta2 = [q.topic, q.year ? `${q.year}` : null, q.exam_type?.toUpperCase()]
       .filter(Boolean)
       .join(" · ");
@@ -832,7 +878,7 @@ export async function downloadPackAsDocx(userId: string, subjectId: string) {
     children.push(
       new Paragraph({
         children: [
-          new TextRun({ text: `Q${i + 1}. `, bold: true }),
+            new TextRun({ text: `Q${qIndex}. `, bold: true }),
           new TextRun({ text: q.question_text }),
         ],
       })
@@ -844,29 +890,73 @@ export async function downloadPackAsDocx(userId: string, subjectId: string) {
         })
       );
     });
-    const ci = correctIndexFor(q);
-    if (ci >= 0) {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({ text: "Answer: ", bold: true }),
-            new TextRun(letterLabel(ci)),
-          ],
-        })
-      );
-    }
-    if (q.explanation) {
-      children.push(
-        new Paragraph({
-          children: [
-            new TextRun({ text: "Explanation: ", bold: true }),
-            new TextRun(q.explanation),
-          ],
-        })
-      );
-    }
+      const ci = correctIndexFor(q);
+      answerKey.push({
+        n: qIndex,
+        section: sectionLabel,
+        answer: ci >= 0 ? letterLabel(ci) : null,
+        explanation: q.explanation || null,
+      });
     children.push(new Paragraph({ children: [new TextRun("")] }));
-  });
+    }
+  }
+
+  // Appendix: answer key + explanations at the end of the document.
+  if (answerKey.length > 0) {
+    children.push(
+      new Paragraph({ children: [new TextRun("")] }),
+      new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        children: [
+          new TextRun({ text: "Answer Key & Explanations", bold: true }),
+        ],
+      }),
+      new Paragraph({
+        children: [
+          new TextRun({
+            text:
+              "Use this section to check your answers after attempting the questions.",
+            italics: true,
+            color: "666666",
+          }),
+        ],
+      }),
+      new Paragraph({ children: [new TextRun("")] })
+    );
+
+    let lastSection = "";
+    for (const a of answerKey) {
+      if (a.section && a.section !== lastSection) {
+        children.push(
+          new Paragraph({
+            heading: HeadingLevel.HEADING_2,
+            children: [new TextRun({ text: a.section, bold: true })],
+          })
+        );
+        lastSection = a.section;
+      }
+      children.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: `Q${a.n}. `, bold: true }),
+            new TextRun({ text: "Answer: ", bold: true }),
+            new TextRun(a.answer ?? "—"),
+          ],
+        })
+      );
+      if (a.explanation) {
+        children.push(
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Explanation: ", bold: true }),
+              new TextRun(a.explanation),
+            ],
+          })
+        );
+      }
+      children.push(new Paragraph({ children: [new TextRun("")] }));
+    }
+  }
 
   const doc = new Document({ sections: [{ children }] });
   const blob = await Packer.toBlob(doc);
