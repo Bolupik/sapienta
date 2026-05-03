@@ -626,6 +626,15 @@ export async function downloadPackAsPdf(userId: string, subjectId: string) {
   y = marginTop + 110;
 
   let qIndex = 0;
+  type AnswerEntry = {
+    n: number;
+    section: string;
+    questionText: string;
+    answer: string | null;
+    explanation: string | null;
+  };
+  const answerKey: AnswerEntry[] = [];
+
   for (const key of orderedKeys) {
     const list = groups.get(key)!;
     if (list.length === 0) continue;
@@ -698,22 +707,13 @@ export async function downloadPackAsPdf(userId: string, subjectId: string) {
       y += SP.afterOptions;
 
       const ci = correctIndexFor(q);
-      if (ci >= 0) {
-        drawText(`Answer: ${letterLabel(ci)}`, {
-          size: 10,
-          bold: true,
-          color: 30,
-          gap: SP.afterAnswer,
-        });
-      }
-      if (q.explanation) {
-        drawText(`Explanation: ${q.explanation}`, {
-          size: 10,
-          color: 80,
-          hangingIndent: 14,
-          gap: SP.afterExplanation,
-        });
-      }
+      answerKey.push({
+        n: qIndex,
+        section: currentSectionLabel,
+        questionText: q.question_text,
+        answer: ci >= 0 ? letterLabel(ci) : null,
+        explanation: q.explanation || null,
+      });
 
       y += SP.betweenQuestions;
       // Light divider between questions
@@ -721,6 +721,58 @@ export async function downloadPackAsPdf(userId: string, subjectId: string) {
         doc.setDrawColor(235);
         doc.setLineWidth(0.4);
         doc.line(marginX, y - 10, pageW - marginX, y - 10);
+      }
+    }
+  }
+
+  // ------- Answer key & explanations appendix -------
+  if (answerKey.length > 0) {
+    currentSectionLabel = "Answer Key & Explanations";
+    newPage();
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.text("Answer Key & Explanations", marginX, y);
+    y += 24;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(110);
+    doc.text(
+      "Use this section to check your answers after attempting the questions.",
+      marginX,
+      y
+    );
+    doc.setTextColor(0);
+    y += 22;
+
+    let lastSection = "";
+    for (const a of answerKey) {
+      if (a.section && a.section !== lastSection) {
+        ensureSpace(40);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text(a.section, marginX, y);
+        y += 18;
+        lastSection = a.section;
+      }
+
+      drawText(
+        `Q${a.n}. Answer: ${a.answer ?? "—"}`,
+        {
+          size: 11,
+          bold: true,
+          hangingIndent: 22,
+          gap: 2,
+        }
+      );
+      if (a.explanation) {
+        drawText(a.explanation, {
+          size: 10,
+          color: 80,
+          hangingIndent: 14,
+          gap: 8,
+        });
+      } else {
+        y += 8;
       }
     }
   }
