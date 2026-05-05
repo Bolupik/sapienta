@@ -13,14 +13,17 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTutorRouteImport } from './routes/_app/tutor'
+import { Route as AppTeachersRouteImport } from './routes/_app/teachers'
 import { Route as AppSovereigntyRouteImport } from './routes/_app/sovereignty'
 import { Route as AppSecurityRouteImport } from './routes/_app/security'
 import { Route as AppReviewRouteImport } from './routes/_app/review'
 import { Route as AppQuestionBankRouteImport } from './routes/_app/question-bank'
 import { Route as AppOfflineRouteImport } from './routes/_app/offline'
+import { Route as AppNotesRouteImport } from './routes/_app/notes'
 import { Route as AppExamRouteImport } from './routes/_app/exam'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppAnalyticsRouteImport } from './routes/_app/analytics'
+import { Route as AppTeachersAdminRouteImport } from './routes/_app/teachers.admin'
 import { Route as AppMockWaecRouteImport } from './routes/_app/mock.waec'
 import { Route as AppMockJambRouteImport } from './routes/_app/mock.jamb'
 
@@ -41,6 +44,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppTutorRoute = AppTutorRouteImport.update({
   id: '/tutor',
   path: '/tutor',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTeachersRoute = AppTeachersRouteImport.update({
+  id: '/teachers',
+  path: '/teachers',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSovereigntyRoute = AppSovereigntyRouteImport.update({
@@ -68,6 +76,11 @@ const AppOfflineRoute = AppOfflineRouteImport.update({
   path: '/offline',
   getParentRoute: () => AppRoute,
 } as any)
+const AppNotesRoute = AppNotesRouteImport.update({
+  id: '/notes',
+  path: '/notes',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppExamRoute = AppExamRouteImport.update({
   id: '/exam',
   path: '/exam',
@@ -82,6 +95,11 @@ const AppAnalyticsRoute = AppAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
   getParentRoute: () => AppRoute,
+} as any)
+const AppTeachersAdminRoute = AppTeachersAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppTeachersRoute,
 } as any)
 const AppMockWaecRoute = AppMockWaecRouteImport.update({
   id: '/mock/waec',
@@ -100,14 +118,17 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AppAnalyticsRoute
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
+  '/notes': typeof AppNotesRoute
   '/offline': typeof AppOfflineRoute
   '/question-bank': typeof AppQuestionBankRoute
   '/review': typeof AppReviewRoute
   '/security': typeof AppSecurityRoute
   '/sovereignty': typeof AppSovereigntyRoute
+  '/teachers': typeof AppTeachersRouteWithChildren
   '/tutor': typeof AppTutorRoute
   '/mock/jamb': typeof AppMockJambRoute
   '/mock/waec': typeof AppMockWaecRoute
+  '/teachers/admin': typeof AppTeachersAdminRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -115,14 +136,17 @@ export interface FileRoutesByTo {
   '/analytics': typeof AppAnalyticsRoute
   '/dashboard': typeof AppDashboardRoute
   '/exam': typeof AppExamRoute
+  '/notes': typeof AppNotesRoute
   '/offline': typeof AppOfflineRoute
   '/question-bank': typeof AppQuestionBankRoute
   '/review': typeof AppReviewRoute
   '/security': typeof AppSecurityRoute
   '/sovereignty': typeof AppSovereigntyRoute
+  '/teachers': typeof AppTeachersRouteWithChildren
   '/tutor': typeof AppTutorRoute
   '/mock/jamb': typeof AppMockJambRoute
   '/mock/waec': typeof AppMockWaecRoute
+  '/teachers/admin': typeof AppTeachersAdminRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -132,14 +156,17 @@ export interface FileRoutesById {
   '/_app/analytics': typeof AppAnalyticsRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/exam': typeof AppExamRoute
+  '/_app/notes': typeof AppNotesRoute
   '/_app/offline': typeof AppOfflineRoute
   '/_app/question-bank': typeof AppQuestionBankRoute
   '/_app/review': typeof AppReviewRoute
   '/_app/security': typeof AppSecurityRoute
   '/_app/sovereignty': typeof AppSovereigntyRoute
+  '/_app/teachers': typeof AppTeachersRouteWithChildren
   '/_app/tutor': typeof AppTutorRoute
   '/_app/mock/jamb': typeof AppMockJambRoute
   '/_app/mock/waec': typeof AppMockWaecRoute
+  '/_app/teachers/admin': typeof AppTeachersAdminRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -149,14 +176,17 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/dashboard'
     | '/exam'
+    | '/notes'
     | '/offline'
     | '/question-bank'
     | '/review'
     | '/security'
     | '/sovereignty'
+    | '/teachers'
     | '/tutor'
     | '/mock/jamb'
     | '/mock/waec'
+    | '/teachers/admin'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -164,14 +194,17 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/dashboard'
     | '/exam'
+    | '/notes'
     | '/offline'
     | '/question-bank'
     | '/review'
     | '/security'
     | '/sovereignty'
+    | '/teachers'
     | '/tutor'
     | '/mock/jamb'
     | '/mock/waec'
+    | '/teachers/admin'
   id:
     | '__root__'
     | '/'
@@ -180,14 +213,17 @@ export interface FileRouteTypes {
     | '/_app/analytics'
     | '/_app/dashboard'
     | '/_app/exam'
+    | '/_app/notes'
     | '/_app/offline'
     | '/_app/question-bank'
     | '/_app/review'
     | '/_app/security'
     | '/_app/sovereignty'
+    | '/_app/teachers'
     | '/_app/tutor'
     | '/_app/mock/jamb'
     | '/_app/mock/waec'
+    | '/_app/teachers/admin'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -226,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTutorRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/teachers': {
+      id: '/_app/teachers'
+      path: '/teachers'
+      fullPath: '/teachers'
+      preLoaderRoute: typeof AppTeachersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/sovereignty': {
       id: '/_app/sovereignty'
       path: '/sovereignty'
@@ -261,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOfflineRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/notes': {
+      id: '/_app/notes'
+      path: '/notes'
+      fullPath: '/notes'
+      preLoaderRoute: typeof AppNotesRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/exam': {
       id: '/_app/exam'
       path: '/exam'
@@ -282,6 +332,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAnalyticsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/teachers/admin': {
+      id: '/_app/teachers/admin'
+      path: '/admin'
+      fullPath: '/teachers/admin'
+      preLoaderRoute: typeof AppTeachersAdminRouteImport
+      parentRoute: typeof AppTeachersRoute
+    }
     '/_app/mock/waec': {
       id: '/_app/mock/waec'
       path: '/mock/waec'
@@ -299,15 +356,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AppTeachersRouteChildren {
+  AppTeachersAdminRoute: typeof AppTeachersAdminRoute
+}
+
+const AppTeachersRouteChildren: AppTeachersRouteChildren = {
+  AppTeachersAdminRoute: AppTeachersAdminRoute,
+}
+
+const AppTeachersRouteWithChildren = AppTeachersRoute._addFileChildren(
+  AppTeachersRouteChildren,
+)
+
 interface AppRouteChildren {
   AppAnalyticsRoute: typeof AppAnalyticsRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppExamRoute: typeof AppExamRoute
+  AppNotesRoute: typeof AppNotesRoute
   AppOfflineRoute: typeof AppOfflineRoute
   AppQuestionBankRoute: typeof AppQuestionBankRoute
   AppReviewRoute: typeof AppReviewRoute
   AppSecurityRoute: typeof AppSecurityRoute
   AppSovereigntyRoute: typeof AppSovereigntyRoute
+  AppTeachersRoute: typeof AppTeachersRouteWithChildren
   AppTutorRoute: typeof AppTutorRoute
   AppMockJambRoute: typeof AppMockJambRoute
   AppMockWaecRoute: typeof AppMockWaecRoute
@@ -317,11 +388,13 @@ const AppRouteChildren: AppRouteChildren = {
   AppAnalyticsRoute: AppAnalyticsRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppExamRoute: AppExamRoute,
+  AppNotesRoute: AppNotesRoute,
   AppOfflineRoute: AppOfflineRoute,
   AppQuestionBankRoute: AppQuestionBankRoute,
   AppReviewRoute: AppReviewRoute,
   AppSecurityRoute: AppSecurityRoute,
   AppSovereigntyRoute: AppSovereigntyRoute,
+  AppTeachersRoute: AppTeachersRouteWithChildren,
   AppTutorRoute: AppTutorRoute,
   AppMockJambRoute: AppMockJambRoute,
   AppMockWaecRoute: AppMockWaecRoute,
@@ -337,12 +410,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
