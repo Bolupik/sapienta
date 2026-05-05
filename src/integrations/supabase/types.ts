@@ -169,6 +169,71 @@ export type Database = {
           },
         ]
       }
+      lesson_notes: {
+        Row: {
+          assignment: string | null
+          class_level: string
+          content: string
+          created_at: string
+          evaluation: string | null
+          id: string
+          is_published: boolean
+          objectives: string | null
+          resources: string | null
+          sub_topic: string | null
+          subject_id: string | null
+          teacher_id: string
+          term: number
+          topic: string
+          updated_at: string
+          week: number
+        }
+        Insert: {
+          assignment?: string | null
+          class_level: string
+          content: string
+          created_at?: string
+          evaluation?: string | null
+          id?: string
+          is_published?: boolean
+          objectives?: string | null
+          resources?: string | null
+          sub_topic?: string | null
+          subject_id?: string | null
+          teacher_id: string
+          term: number
+          topic: string
+          updated_at?: string
+          week: number
+        }
+        Update: {
+          assignment?: string | null
+          class_level?: string
+          content?: string
+          created_at?: string
+          evaluation?: string | null
+          id?: string
+          is_published?: boolean
+          objectives?: string | null
+          resources?: string | null
+          sub_topic?: string | null
+          subject_id?: string | null
+          teacher_id?: string
+          term?: number
+          topic?: string
+          updated_at?: string
+          week?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_notes_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mock_sessions: {
         Row: {
           attempt_ids: string[]
@@ -375,6 +440,48 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+        }
+        Relationships: []
+      }
+      teacher_applications: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          message: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          school: string | null
+          status: string
+          subjects: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school?: string | null
+          status?: string
+          subjects?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          message?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          school?: string | null
+          status?: string
+          subjects?: string[]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
