@@ -43,6 +43,8 @@ export function SiteHeader() {
               <NavLink to="/question-bank">Question Bank</NavLink>
               <NavLink to="/review">Review</NavLink>
               <NavLink to="/analytics">Analytics</NavLink>
+              <NavLink to="/notes">Notes</NavLink>
+              <NavLink to="/teachers">Teach</NavLink>
               <NavLink to="/offline">Offline</NavLink>
               <NavLink to="/sovereignty">My Data</NavLink>
             </>
@@ -108,6 +110,8 @@ export function SiteHeader() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/question-bank" })}>Question Bank</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/review" })}>Review</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/analytics" })}>Analytics</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/notes" })}>Lesson notes</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/teachers" })}>Teach</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/offline" })}>Offline packs</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/sovereignty" })}>My Data</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/security" })}>Security & 2FA</DropdownMenuItem>
