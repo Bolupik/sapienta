@@ -8,7 +8,7 @@ import { Loader2, ShieldCheck, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { isTeacher } from "@/lib/lesson-notes";
 
-export const Route = createFileRoute("/_app/teachers/admin")({
+export const Route = createFileRoute("/_app/teachers_/admin")({
   head: () => ({ meta: [{ title: "Teacher applications — Sapientia" }] }),
   component: AdminPage,
 });
