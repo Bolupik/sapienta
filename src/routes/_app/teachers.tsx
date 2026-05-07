@@ -396,6 +396,7 @@ function TeacherDashboard({
               </Link>
             </Button>
           )}
+          <AiDraftDialog subjects={subjects} onCreated={onChange} />
           <Button
             onClick={() => setCreating(true)}
             className="bg-emerald text-emerald-foreground hover:bg-emerald/90"
