@@ -1,1 +1,4 @@
 project_id = "lzyhjggkmdsdvmerhfiz"
+
+[functions.draft-lesson-notes]
+verify_jwt = false

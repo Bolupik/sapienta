@@ -33,7 +33,15 @@ import {
   FileType2,
   ChevronDown,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   CLASS_LEVELS,
@@ -388,6 +396,7 @@ function TeacherDashboard({
               </Link>
             </Button>
           )}
+          <AiDraftDialog subjects={subjects} onCreated={onChange} />
           <Button
             onClick={() => setCreating(true)}
             className="bg-emerald text-emerald-foreground hover:bg-emerald/90"
@@ -637,5 +646,187 @@ function NoteEditor({
         </Button>
       </div>
     </div>
+  );
+}
+function AiDraftDialog({
+  subjects,
+  onCreated,
+}: {
+  subjects: Subject[];
+  onCreated: () => void;
+}) {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<"term" | "single">("term");
+  const [subjectId, setSubjectId] = useState(subjects[0]?.id ?? "");
+  const [classLevel, setClassLevel] = useState("JSS1");
+  const [term, setTerm] = useState(1);
+  const [week, setWeek] = useState(1);
+  const [topic, setTopic] = useState("");
+  const [weeks, setWeeks] = useState(13);
+  const [busy, setBusy] = useState(false);
+
+  const subjectName = subjects.find((s) => s.id === subjectId)?.name ?? "";
+
+  const generate = async () => {
+    if (!user || !subjectId) {
+      toast.error("Pick a subject first");
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("draft-lesson-notes", {
+        body: {
+          mode,
+          subject: subjectName,
+          classLevel,
+          term,
+          week: mode === "single" ? week : undefined,
+          topic: mode === "single" ? topic || undefined : undefined,
+          weeks: mode === "term" ? weeks : undefined,
+        },
+      });
+      if (error) throw error;
+      const notes: any[] = (data as any)?.notes ?? [];
+      if (notes.length === 0) throw new Error("AI returned no notes");
+
+      const rows = notes.map((n) => ({
+        teacher_id: user.id,
+        subject_id: subjectId,
+        class_level: classLevel,
+        term,
+        week: Number(n.week) || (mode === "single" ? week : 1),
+        topic: String(n.topic || "Untitled").slice(0, 200),
+        sub_topic: n.sub_topic ? String(n.sub_topic).slice(0, 200) : null,
+        objectives: n.objectives ?? null,
+        content: String(n.content ?? ""),
+        resources: n.resources ?? null,
+        evaluation: n.evaluation ?? null,
+        assignment: n.assignment ?? null,
+        is_published: false,
+      }));
+
+      const { error: insErr } = await supabase.from("lesson_notes").insert(rows);
+      if (insErr) throw insErr;
+      toast.success(`Drafted ${rows.length} note${rows.length === 1 ? "" : "s"}`);
+      setOpen(false);
+      onCreated();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Failed to draft notes");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => setOpen(true)}
+      >
+        <Sparkles className="mr-2 h-4 w-4" /> AI draft
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>AI draft NERDC notes</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setMode("term")}
+              className={`rounded-md border px-3 py-2 text-sm ${mode === "term" ? "border-emerald bg-emerald/10" : ""}`}
+            >
+              Full term plan
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("single")}
+              className={`rounded-md border px-3 py-2 text-sm ${mode === "single" ? "border-emerald bg-emerald/10" : ""}`}
+            >
+              Single week
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Subject</Label>
+              <Select value={subjectId} onValueChange={setSubjectId}>
+                <SelectTrigger><SelectValue placeholder="Subject" /></SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Class</Label>
+              <Select value={classLevel} onValueChange={setClassLevel}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CLASS_LEVELS.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Term</Label>
+              <Select value={String(term)} onValueChange={(v) => setTerm(Number(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3].map((t) => (
+                    <SelectItem key={t} value={String(t)}>Term {t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {mode === "term" ? (
+              <div>
+                <Label>Weeks</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={14}
+                  value={weeks}
+                  onChange={(e) => setWeeks(Math.max(1, Math.min(14, Number(e.target.value) || 1)))}
+                />
+              </div>
+            ) : (
+              <div>
+                <Label>Week</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={14}
+                  value={week}
+                  onChange={(e) => setWeek(Math.max(1, Math.min(14, Number(e.target.value) || 1)))}
+                />
+              </div>
+            )}
+          </div>
+          {mode === "single" && (
+            <div>
+              <Label>Topic (optional — leave blank to use NERDC topic)</Label>
+              <Input value={topic} onChange={(e) => setTopic(e.target.value)} maxLength={200} />
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Notes are saved as drafts. Review and publish them to share with students.
+          </p>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
+          <Button
+            onClick={generate}
+            disabled={busy || !subjectId}
+            className="bg-emerald text-emerald-foreground hover:bg-emerald/90"
+          >
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Sparkles className="mr-2 h-4 w-4" /> Generate</>}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
