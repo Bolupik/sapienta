@@ -102,7 +102,7 @@ ${topic ? `Topic: ${topic}` : "Pick the standard NERDC topic for this week."}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: mode === "term" ? "google/gemini-2.5-pro" : "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
