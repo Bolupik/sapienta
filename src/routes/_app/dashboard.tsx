@@ -131,7 +131,7 @@ function Dashboard() {
   return (
     <main className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
       {/* Greeting */}
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-10">
         <div>
           <div className="text-xs uppercase tracking-[0.2em] text-emerald font-semibold">
             Welcome back
@@ -146,29 +146,29 @@ function Dashboard() {
             {profile?.exam_year && ` · ${profile.exam_year}`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
           <Link to="/review">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 w-full sm:w-auto h-11">
               <RotateCw className="h-4 w-4" /> Review due
             </Button>
           </Link>
           <Link to="/offline">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 w-full sm:w-auto h-11">
               <HardDrive className="h-4 w-4" /> Offline
             </Button>
           </Link>
           <Link to="/analytics">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 w-full sm:w-auto h-11">
               <TrendingUp className="h-4 w-4" /> Analytics
             </Button>
           </Link>
           <Link to="/tutor">
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2 w-full sm:w-auto h-11">
               <Brain className="h-4 w-4" /> Ask AI Tutor
             </Button>
           </Link>
-          <Link to="/exam">
-            <Button className="bg-emerald text-emerald-foreground hover:bg-emerald/90 gap-2">
+          <Link to="/exam" className="col-span-2 sm:col-auto">
+            <Button className="bg-emerald text-emerald-foreground hover:bg-emerald/90 gap-2 w-full sm:w-auto h-11">
               <Target className="h-4 w-4" /> Take Mock Exam
             </Button>
           </Link>

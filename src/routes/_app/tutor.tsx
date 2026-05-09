@@ -246,7 +246,7 @@ function TutorPage() {
             <p className="text-sm text-muted-foreground">Ask anything. Understand everything.</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Select
             value={subjectId}
             onValueChange={(v) => {
@@ -254,7 +254,7 @@ function TutorPage() {
               startNew();
             }}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="flex-1 sm:w-[180px] sm:flex-none h-11">
               <SelectValue placeholder="Pick a subject" />
             </SelectTrigger>
             <SelectContent>
@@ -265,7 +265,7 @@ function TutorPage() {
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={startNew} title="New chat">
+          <Button variant="outline" onClick={startNew} title="New chat" className="h-11 w-11 shrink-0" aria-label="New chat">
             <MessageSquarePlus className="h-4 w-4" />
           </Button>
         </div>
