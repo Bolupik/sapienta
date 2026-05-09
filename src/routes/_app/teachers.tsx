@@ -391,7 +391,7 @@ function TeacherDashboard({
         <div className="flex gap-2">
           {isAdmin && (
             <Button asChild variant="outline" size="sm">
-              <Link to="/teachers/admin">
+              <Link to="/teachers_/admin">
                 <ShieldCheck className="mr-2 h-4 w-4" /> Admin
               </Link>
             </Button>
