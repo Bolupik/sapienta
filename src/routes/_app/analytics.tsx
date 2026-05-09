@@ -239,7 +239,7 @@ function AnalyticsPage() {
       <PageHeader />
 
       {/* Headline stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-8">
         <Stat label="Avg score" value={`${overall.avgScore}%`} accent />
         <Stat label="All-time accuracy" value={`${overall.accuracyAllTime}%`} />
         <Stat label="Exams completed" value={String(overall.examsCompleted)} />

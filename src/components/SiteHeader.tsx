@@ -21,20 +21,20 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-hero shadow-elevated transition-transform group-hover:rotate-3">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
+        <Link to="/" className="flex items-center gap-2.5 group min-w-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-hero shadow-elevated transition-transform group-hover:rotate-3">
             <GraduationCap className="h-5 w-5 text-emerald-foreground" />
           </div>
-          <div className="leading-none">
+          <div className="leading-none min-w-0">
             <div className="font-display text-lg font-semibold tracking-tight">Sapientia</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="hidden sm:block text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
               WAEC / JAMB AI
             </div>
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 lg:flex">
           {user ? (
             <>
               <NavLink to="/dashboard">Dashboard</NavLink>
@@ -60,11 +60,11 @@ export function SiteHeader() {
           )}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button variant="ghost" size="sm" className="gap-2 h-10 px-2 sm:px-3">
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald text-emerald-foreground text-xs font-semibold">
                     {(profile?.display_name || profile?.full_name || user.email || "?").charAt(0).toUpperCase()}
                   </div>
@@ -83,12 +83,12 @@ export function SiteHeader() {
             </DropdownMenu>
           ) : (
             <>
-              <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/auth" })}>
+              <Button variant="ghost" size="sm" className="h-10" onClick={() => navigate({ to: "/auth" })}>
                 Sign in
               </Button>
               <Button
                 size="sm"
-                className="bg-emerald text-emerald-foreground hover:bg-emerald/90 shadow-elevated"
+                className="bg-emerald text-emerald-foreground hover:bg-emerald/90 shadow-elevated h-10"
                 onClick={() => navigate({ to: "/auth", search: { mode: "signup" } })}
               >
                 Get started
@@ -99,7 +99,7 @@ export function SiteHeader() {
           {user && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
+                <Button variant="ghost" size="icon" className="lg:hidden h-10 w-10" aria-label="Open menu">
                   <Menu className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>

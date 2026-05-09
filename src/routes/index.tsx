@@ -46,7 +46,7 @@ function Landing() {
               <span>Built for WAEC · JAMB · UTME</span>
             </div>
 
-            <h1 className="mt-6 font-display text-5xl sm:text-6xl md:text-7xl font-semibold leading-[1.02] tracking-tight text-balance">
+            <h1 className="mt-6 font-display text-[2.5rem] xs:text-5xl sm:text-6xl md:text-7xl font-semibold leading-[1.05] tracking-tight text-balance">
               Stop memorising.
               <br />
               <span className="italic text-emerald">Start understanding.</span>
@@ -79,11 +79,11 @@ function Landing() {
               </a>
             </div>
 
-            <div className="mt-8 flex items-center justify-center gap-6 text-xs uppercase tracking-wider text-muted-foreground">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-xs uppercase tracking-wider text-muted-foreground">
               <span>5 core subjects</span>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+              <span className="hidden sm:inline h-1 w-1 rounded-full bg-muted-foreground/40" />
               <span>WAEC + JAMB formats</span>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground/40" />
+              <span className="hidden sm:inline h-1 w-1 rounded-full bg-muted-foreground/40" />
               <span>Free to start</span>
             </div>
           </div>

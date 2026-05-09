@@ -377,8 +377,8 @@ function TeacherDashboard({
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-center justify-between mb-6 gap-3">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+        <div className="min-w-0">
           <h1 className="font-display text-2xl font-semibold flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-emerald" />
             Teacher workspace
@@ -388,9 +388,9 @@ function TeacherDashboard({
             library.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {isAdmin && (
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline" size="sm" className="h-10">
               <Link to="/teachers_/admin">
                 <ShieldCheck className="mr-2 h-4 w-4" /> Admin
               </Link>
@@ -399,7 +399,7 @@ function TeacherDashboard({
           <AiDraftDialog subjects={subjects} onCreated={onChange} />
           <Button
             onClick={() => setCreating(true)}
-            className="bg-emerald text-emerald-foreground hover:bg-emerald/90"
+            className="bg-emerald text-emerald-foreground hover:bg-emerald/90 h-10"
             size="sm"
           >
             <Plus className="mr-2 h-4 w-4" /> New note
